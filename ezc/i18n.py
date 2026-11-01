@@ -21,9 +21,8 @@ TR_EN = {
     "Kim cương": "Diamond", "Ảnh": "Image",
     # Tab Bộ sưu tập
     "BỘ SƯU TẬP": "LIBRARY",
-    "Con trỏ của EzCursor và bộ Bibata. Bấm vào con trỏ muốn dùng.": "EzCursor's own cursors and the Bibata set. Click a cursor to use it.",
     "Không tìm thấy thư mục bibata đi kèm phần mềm.": "The bundled bibata folder was not found.",
-    "CHỦ ĐỀ": "THEME", "Tùy chỉnh": "Custom", "MÀU TÙY CHỈNH": "CUSTOM COLOR",
+    "Tùy chỉnh": "Custom",
     "Modern · bo tròn": "Modern · rounded", "Original · góc nhọn": "Original · sharp",
     "Thuận tay phải": "Right-handed", "Thuận tay trái": "Left-handed",
     "Chọn một màu để chuyển sang chủ đề Tùy chỉnh.": "Pick a color to switch to the Custom theme.",
@@ -39,9 +38,6 @@ TR_EN = {
     "Bóng mờ": "Ghost", "Bong bóng": "Bubbles", "Gợn sóng": "Ripple", "Pháo hoa": "Fireworks",
     "Theo màu con trỏ": "Match cursor color", "Ba màu EzCursor": "EzCursor tri-color",
     "Ít": "Low", "Vừa": "Medium", "Nhiều": "High", "Màu hiệu ứng": "Effect color", "Mật độ": "Density",
-    "THỬ NGAY TRÊN MÀN HÌNH": "TRY IT ON SCREEN", "ĐANG THỬ...": "TESTING...",
-    "   Di chuột và click trong 8 giây để xem hiệu ứng.": "   Move and click the mouse for 8 seconds to see the effects.",
-    "Hãy chọn ít nhất một hiệu ứng trước khi thử.": "Please select at least one effect before testing.",
     # Tab Ứng dụng
     "ỨNG DỤNG": "APPS",
     "Chọn game sẽ dùng con trỏ của EzCursor, rồi bấm Áp dụng.": "Select the games that will use the EzCursor cursor, then click Apply.",
@@ -51,17 +47,12 @@ TR_EN = {
     "Chưa chọn ứng dụng nào.": "No apps selected.", "✓ Đã áp dụng.  ": "✓ Applied.  ",
     # Tab Tùy chọn
     "TÙY CHỌN": "OPTIONS", "Cài đặt chung, cập nhật và phím tắt.": "General settings, updates and hotkeys.",
-    "Ngôn ngữ": "Language", "Ngôn ngữ hiển thị của EzCursor.": "Display language of EzCursor.",
+    "Ngôn ngữ": "Language",
     "Ẩn con trỏ thật của game": "Hide the game's real cursor",
-    "Chỉ hiện con trỏ của EzCursor khi đang ở trong game.": "Show only the EzCursor cursor while in game.",
     "Khởi động cùng Windows": "Start with Windows",
-    "Chạy ngầm dưới khay hệ thống khi bật máy.": "Run in the system tray when your PC starts.",
     "Tự động kiểm tra cập nhật": "Check for updates automatically",
-    "Thông báo khi có phiên bản mới trên GitHub.": "Notify when a new version is on GitHub.",
     "Màn hình chào khi mở": "Splash screen on launch",
-    "Hiện logo động khoảng 2 giây mỗi lần mở EzCursor.": "Show the animated logo for about 2 seconds at launch.",
-    "Phiên bản ": "Version ", "Khôi phục cài đặt gốc": "Reset to defaults",
-    "Xóa mọi lựa chọn đã lưu và khởi động lại EzCursor như mới cài.": "Clear all saved settings and restart EzCursor as freshly installed.",
+    "Phiên bản ": "Version ",
     "Khôi phục": "Reset", "PHÍM TẮT": "HOTKEYS", "Bật / tắt": "On / off", "Đổi hình dạng": "Change shape",
     "Đổi màu": "Change color",
     # Trạng thái
@@ -80,12 +71,11 @@ TR_EN = {
     "Khôi phục toàn bộ cài đặt về mặc định?\n\nDanh sách game, con trỏ, hiệu ứng và ảnh đã tải lên sẽ bị xóa. EzCursor sẽ tự khởi động lại.":
         "Reset all settings to defaults?\n\nYour game list, cursor, effects and uploaded image will be removed. EzCursor will restart automatically.",
     "Chưa cấu hình GITHUB_REPO trong mã nguồn.": "GITHUB_REPO is not configured in the source code.",
-    "Đang kiểm tra cập nhật...": "Checking for updates...",
-    "Bạn đang dùng phiên bản mới nhất.": "You are using the latest version.",
+    "Đang kiểm tra…": "Checking…", "Đã là bản mới nhất.": "Up to date.",
     "Bạn đang dùng phiên bản mới nhất": "You are using the latest version",
-    "Có phiên bản mới: ": "New version available: ",
+    "Có bản mới: ": "New version: ",
     "Đã có EzCursor {v}. Mở EzCursor để cập nhật.": "EzCursor {v} is available. Open EzCursor to update.",
-    "Không kiểm tra được cập nhật.": "Could not check for updates.",
+    "Không kiểm tra được.": "Couldn't check.",
     "Không kiểm tra được cập nhật.\nHãy kiểm tra kết nối mạng.": "Could not check for updates.\nPlease check your internet connection.",
     "Đang tải...": "Downloading...",
     "Đang cài đặt, EzCursor sẽ tự mở lại sau giây lát...": "Installing, EzCursor will reopen in a moment...",
@@ -120,8 +110,6 @@ TR_EN = {
     "Đổi con trỏ": "Change cursor", "Hình cơ bản": "Basic shapes", "Con trỏ của bạn": "Your cursors",
     "(chưa có)": "(none yet)", "Hồ sơ": "Profile", "Áp cho: {n}": "Applies to: {n}",
     "Yêu thích": "Favorites", "Thêm vào Yêu thích": "Add to favorites", "Bỏ khỏi Yêu thích": "Remove from favorites",
-    "Bấm ☆ để thêm vào Yêu thích. Ctrl+Alt+R sẽ chỉ đổi giữa các con trỏ yêu thích.":
-        "Click ☆ to add a favorite. Ctrl+Alt+R then cycles through your favorites only.",
     "THIẾT LẬP NHANH": "QUICK SETUP", "Bước {i} / 3": "Step {i} / 3", "Bỏ qua": "Skip", "Quay lại": "Back",
     "Tiếp tục": "Next", "Bắt đầu": "Let's go",
     "Bạn chơi game nào?": "Which games do you play?",
@@ -173,7 +161,6 @@ TR_EN = {
     "Game này dùng con trỏ riêng và đang chạy Fullscreen nên EzCursor không thể hiện con trỏ. Hãy chuyển game sang Borderless hoặc Windowed.":
         "This game uses its own cursor and runs in exclusive Fullscreen, so EzCursor can't show its cursor. Switch the game to Borderless or Windowed.",
     "Giữ con trỏ trên thanh taskbar": "Keep cursor on the taskbar",
-    "Rê chuột xuống taskbar vẫn dùng con trỏ EzCursor.": "Keep the EzCursor cursor when you move over the taskbar.",
     "Hiện con trỏ trên stream (OBS)": "Show cursor on stream (OBS)",
     "Cho người xem stream thấy con trỏ EzCursor qua nguồn Browser của OBS.":
         "Let stream viewers see your EzCursor cursor through an OBS Browser source.",
@@ -181,8 +168,6 @@ TR_EN = {
     "Sao chép link": "Copy link",
     "Không mở được chế độ stream:": "Couldn't start stream mode:",
     "Đoán trước vị trí con trỏ": "Predict cursor position",
-    "Bù thêm nửa khung hình khi rê nhanh; có thể trượt nhẹ khi đổi hướng.":
-        "Gains half a frame on fast moves; may overshoot slightly when you change direction.",
     "Chế độ con trỏ": "Cursor mode", "Lớp phủ": "Overlay", "Con trỏ thật": "Real cursor",
     "Không độ trễ, chạy cả Fullscreen. Không có lấp lánh, ombre chuyển động.":
         "Zero lag, works in Fullscreen too. No sparkle or animated ombre.",
@@ -196,9 +181,23 @@ TR_EN = {
     "Chưa có con trỏ nào. Bấm \"+ Thêm con trỏ\" để thêm ảnh PNG, GIF hoặc file con trỏ .cur, .ani.":
         "No cursors yet. Click \"+ Add cursor\" to add a PNG, GIF or .cur / .ani cursor file.",
     "Tìm con trỏ": "Find cursor", "Lắc chuột để tìm": "Shake to find",
-    "Giữ / thả chuột": "Lock / free mouse", "Giữ / thả:": "Lock / free:",
-    "  Giữ chuột trong cửa sổ game (không lỡ click sang màn hình khác)":
-        "  Lock the mouse to the game window (no stray clicks on other monitors)",
+    "Giữ / thả chuột": "Lock mouse",
+    "Bấm vào con trỏ muốn dùng, bấm ☆ để thêm vào Yêu thích.": "Click a cursor to use it, click ☆ to add it to Favorites.",
+    "★ Yêu thích": "★ Favorites",
+    "Ctrl+Alt+R đổi lần lượt giữa các con trỏ yêu thích.": "Ctrl+Alt+R cycles through your favorite cursors.",
+    "Chưa có con trỏ yêu thích. Bấm ☆ trên một con trỏ ở các tab khác để thêm vào đây.":
+        "No favorites yet. Click ☆ on a cursor in the other tabs to add it here.",
+    "TRONG GAME": "IN GAME", "STREAM": "STREAM",
+    "Chỉ hiện con trỏ EzCursor trong game.": "Only the EzCursor cursor shows in game.",
+    "Giữ chuột trong cửa sổ game": "Lock the mouse to the game window",
+    "Không lỡ click sang màn hình khác.": "No stray clicks on other monitors.",
+    "Vẫn dùng con trỏ EzCursor trên taskbar.": "Keep the EzCursor cursor on the taskbar.",
+    "Bù nửa khung hình khi rê nhanh.": "Gains half a frame when moving fast.",
+    "Lắc nhanh là con trỏ phóng to, dễ thấy.": "A quick shake makes the cursor grow.",
+    "Chạy ngầm dưới khay khi bật máy.": "Runs in the tray when your PC starts.",
+    "Báo khi có phiên bản mới trên GitHub.": "Tells you when a new version is on GitHub.",
+    "Logo động khoảng 2 giây.": "About 2 seconds of animated logo.",
+    "Khôi phục cài đặt gốc…": "Reset to defaults…",
     "Đang giữ chuột trong cửa sổ game.": "Mouse is locked to the game window.",
     "Đã thả chuột ra khỏi cửa sổ game.": "Mouse released from the game window.",
     # 1.8.0

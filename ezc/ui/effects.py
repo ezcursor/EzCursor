@@ -4,17 +4,16 @@ import ctypes
 import time
 import tkinter as tk
 from ctypes import wintypes
-from tkinter import colorchooser, messagebox
+from tkinter import colorchooser
 
 import customtkinter as ctk
 
-from ..base import APP_NAME
 from ..winapi import SWP_NOACTIVATE, SWP_NOSIZE, user32
 from ..system import mouse_buttons
 from ..i18n import T
 from ..colors import mix
 from ..ombre import OMBRE_PRESETS, ombre_dot, ombre_swatch
-from ..theme import ACCENT, BG, BORDER, CARD, FIELD, TEXT, TEXT2
+from ..theme import ACCENT, BG, FIELD, TEXT, TEXT2
 from ..bibata import OWN_BY_ID
 from ..fx import EZ_COLORS, FX_CLICKS, FX_TRAILS, fx_icon
 
@@ -63,22 +62,19 @@ class EffectsMixin:
 
         opt = self.card(page)
         opt.pack(fill="x")
-        seg_kw = dict(height=32, font=self.F.b(12, strong=True), fg_color=FIELD, unselected_color=FIELD,
-                      unselected_hover_color="#1A1E29", selected_color=mix(CARD, ACCENT, 0.35),
-                      selected_hover_color=mix(CARD, ACCENT, 0.45), text_color=TEXT)
         self.fx_color_map = {T("Theo màu con trỏ"): "cursor", T("Ba màu EzCursor"): "ez"}
         self.fx_dens_map = {T("Ít"): "low", T("Vừa"): "mid", T("Nhiều"): "high"}
         row = ctk.CTkFrame(opt, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=(12, 6))
         ctk.CTkLabel(row, text=T("Màu hiệu ứng"), font=self.F.b(13), text_color=TEXT).pack(side="left")
-        self.fx_color_seg = ctk.CTkSegmentedButton(row, values=list(self.fx_color_map),
-                                                   command=lambda v: self.set_fx("fx_color", self.fx_color_map[v]), **seg_kw)
+        self.fx_color_seg = self.seg(row, list(self.fx_color_map),
+                                     lambda v: self.set_fx("fx_color", self.fx_color_map[v]))
         self.fx_color_seg.pack(side="right")
         row = ctk.CTkFrame(opt, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=(6, 6))
         ctk.CTkLabel(row, text=T("Mật độ"), font=self.F.b(13), text_color=TEXT).pack(side="left")
-        self.fx_dens_seg = ctk.CTkSegmentedButton(row, values=list(self.fx_dens_map),
-                                                  command=lambda v: self.set_fx("fx_density", self.fx_dens_map[v]), **seg_kw)
+        self.fx_dens_seg = self.seg(row, list(self.fx_dens_map),
+                                    lambda v: self.set_fx("fx_density", self.fx_dens_map[v]))
         self.fx_dens_seg.pack(side="right")
         row = ctk.CTkFrame(opt, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=(6, 12))
@@ -98,26 +94,14 @@ class EffectsMixin:
                 side="right")
             self.hold_vars[side], self.hold_btns[side] = var, btn
 
-        row = ctk.CTkFrame(opt, fg_color="transparent")
-        row.pack(fill="x", padx=16, pady=(0, 12))
-        ctk.CTkLabel(row, text=T("Viền tự động khi nền trùng màu con trỏ"), font=self.F.b(13),
-                     text_color=TEXT).pack(side="left")
         self.contrast_var = tk.BooleanVar(value=self.cfg["auto_contrast"])
-        self.switch(row, self.contrast_var, self.set_auto_contrast).pack(side="right")
+        self.option_row(opt, "Viền tự động khi nền trùng màu con trỏ", None, self.contrast_var,
+                        self.set_auto_contrast, size=13)[0].pack(fill="x", padx=16, pady=(0, 12))
 
         inv = {v: k for k, v in self.fx_color_map.items()}
         self.fx_color_seg.set(inv.get(self.cfg["fx_color"], T("Theo màu con trỏ")))
         inv = {v: k for k, v in self.fx_dens_map.items()}
         self.fx_dens_seg.set(inv.get(self.cfg["fx_density"], T("Vừa")))
-
-        test = ctk.CTkFrame(page, fg_color="transparent")
-        test.pack(fill="x", pady=(14, 0))
-        self.fx_test_btn = ctk.CTkButton(test, text=T("THỬ NGAY TRÊN MÀN HÌNH"), command=self.fx_test, height=44,
-                                         width=240, corner_radius=10, fg_color=ACCENT,
-                                         hover_color=mix(ACCENT, "#FFFFFF", 0.15), font=self.F.h(14))
-        self.fx_test_btn.pack(side="left")
-        ctk.CTkLabel(test, text=T("   Di chuột và click trong 8 giây để xem hiệu ứng."), font=self.F.b(12),
-                     text_color=TEXT2).pack(side="left")
         return page
 
     def set_auto_contrast(self):
@@ -150,18 +134,7 @@ class EffectsMixin:
         if not getattr(self, "fx_tiles", None):
             return
         for (key, val), b in self.fx_tiles.items():
-            on = self.cfg[key] == val
-            b.configure(fg_color=mix(CARD, ACCENT, 0.16) if on else FIELD,
-                        hover_color=mix(CARD, ACCENT, 0.24) if on else "#161A23",
-                        border_color=ACCENT if on else BORDER, text_color="#FFFFFF" if on else TEXT2)
-
-    def fx_test(self):
-        if self.cfg["fx_trail"] == "off" and self.cfg["fx_click"] == "off":
-            messagebox.showinfo(APP_NAME, T("Hãy chọn ít nhất một hiệu ứng trước khi thử."), parent=self.win)
-            return
-        self.fx_test_until = time.perf_counter() + 8
-        self.fx_test_btn.configure(text=T("ĐANG THỬ..."), state="disabled")
-        self.win.after(8000, lambda: self.fx_test_btn.configure(text=T("THỬ NGAY TRÊN MÀN HÌNH"), state="normal"))
+            self.tile_style(b, self.cfg[key] == val)
 
     def fx_palette(self):
         if self.cfg["fx_color"] == "ez":
@@ -183,7 +156,7 @@ class EffectsMixin:
                 self.cf_next = now * 1000 + self.cursor_durations[self.cf_idx]
                 self.show_img(self.cursor_frames[self.cf_idx])
             on = c["fx_trail"] != "off" or c["fx_click"] != "off"
-            want = on and (self.active or now < self.fx_test_until)
+            want = on and self.active
             if want or self.fx.busy():
                 pt = wintypes.POINT()
                 user32.GetCursorPos(ctypes.byref(pt))
@@ -244,11 +217,8 @@ class EffectsMixin:
         self.switch(row2, self.ombre_anim_var, self.set_ombre_anim).pack(side="left")
         ctk.CTkLabel(row2, text=T("  Chuyển động"), font=self.F.b(13), text_color=TEXT).pack(side="left")
         self.ombre_speed_map = {T("Chậm"): "slow", T("Vừa"): "mid", T("Nhanh"): "fast"}
-        self.ombre_speed_seg = ctk.CTkSegmentedButton(
-            row2, values=list(self.ombre_speed_map), height=30, font=self.F.b(12, strong=True), fg_color=FIELD,
-            unselected_color=FIELD, unselected_hover_color="#1A1E29", selected_color=mix(CARD, ACCENT, 0.35),
-            selected_hover_color=mix(CARD, ACCENT, 0.45), text_color=TEXT,
-            command=lambda v: self.set_ombre_speed(self.ombre_speed_map[v]))
+        self.ombre_speed_seg = self.seg(row2, list(self.ombre_speed_map),
+                                        lambda v: self.set_ombre_speed(self.ombre_speed_map[v]), height=30)
         self.ombre_speed_seg.pack(side="right")
 
     def update_ombre_ui(self):

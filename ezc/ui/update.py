@@ -38,7 +38,7 @@ class UpdateMixin:
         if self.checking_update:
             return
         self.checking_update = True
-        self.upd_label.configure(text=T("Đang kiểm tra cập nhật..."))
+        self.upd_label.configure(text=T("Đang kiểm tra…"))
 
         def work():
             try:
@@ -54,12 +54,12 @@ class UpdateMixin:
             self.save()
             info = data
             if parse_version(info["version"]) <= parse_version(APP_VERSION):
-                self.upd_label.configure(text=T("Bạn đang dùng phiên bản mới nhất."))
+                self.upd_label.configure(text=T("Đã là bản mới nhất."))
                 if manual:
                     messagebox.showinfo(APP_NAME, T("Bạn đang dùng phiên bản mới nhất") + f" ({APP_VERSION}).",
                                         parent=self.win)
                 return
-            self.upd_label.configure(text=T("Có phiên bản mới: ") + info["version"], text_color=ACCENT)
+            self.upd_label.configure(text=T("Có bản mới: ") + info["version"], text_color=ACCENT)
             if not manual and info["version"] == self.cfg["skipped_version"]:
                 return
             if self.win.state() == "withdrawn":
@@ -72,7 +72,7 @@ class UpdateMixin:
                 self.show_update_dialog(info, manual)
         elif kind == "update_error":
             self.checking_update = False
-            self.upd_label.configure(text=T("Không kiểm tra được cập nhật."))
+            self.upd_label.configure(text=T("Không kiểm tra được."))
             if manual:
                 messagebox.showerror(APP_NAME, T("Không kiểm tra được cập nhật.\nHãy kiểm tra kết nối mạng.") + f"\n\n{data}",
                                      parent=self.win)

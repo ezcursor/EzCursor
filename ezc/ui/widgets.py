@@ -5,7 +5,7 @@ import customtkinter as ctk
 from ..i18n import T
 from ..colors import mix
 from ..theme import ACCENT, BORDER, CARD, CYAN, CYAN_TEXT, FIELD, MUTED, TEXT, TEXT2
-from ..icons import _ss, simple_icon
+from ..icons import simple_icon
 
 
 class WidgetsMixin:
@@ -56,12 +56,32 @@ class WidgetsMixin:
         self.profile_menus.append((menu, rm))
         return top
 
-    @staticmethod
-    def _chip_dot(col):
-        return ctk.CTkImage(_ss(lambda d, s, col=col: d.ellipse(
-            [1 * s, 1 * s, 15 * s, 15 * s], fill=col, outline="#FFFFFF", width=int(1.5 * s)), 16), size=(14, 14))
+    def seg(self, parent, values, command, height=32, size=12, strong=True):
+        """Nút chọn một trong nhiều lựa chọn, cùng kiểu trên mọi tab."""
+        return ctk.CTkSegmentedButton(parent, values=values, command=command, height=height,
+                                      font=self.F.b(size, strong=strong), fg_color=FIELD, unselected_color=FIELD,
+                                      unselected_hover_color="#1A1E29", selected_color=mix(CARD, ACCENT, 0.35),
+                                      selected_hover_color=mix(CARD, ACCENT, 0.45), text_color=TEXT)
 
-    def _chip_style(self, b, on, image):
-        b.configure(image=image, fg_color=mix(CARD, ACCENT, 0.16) if on else FIELD,
+    @staticmethod
+    def tile_style(b, on, idle=FIELD, text=TEXT2):
+        """Ô chọn (con trỏ, hiệu ứng...): nền và viền nổi lên khi đang chọn."""
+        b.configure(fg_color=mix(CARD, ACCENT, 0.16) if on else idle,
                     hover_color=mix(CARD, ACCENT, 0.24) if on else "#161A23",
-                    border_color=ACCENT if on else BORDER, text_color="#FFFFFF" if on else TEXT2)
+                    border_color=ACCENT if on else BORDER, text_color="#FFFFFF" if on else text)
+
+    def option_row(self, parent, title, sub=None, var=None, command=None, size=14):
+        """Hàng cài đặt: tiêu đề (+ mô tả) bên trái, công tắc bên phải nếu có var.
+        Trả về (hàng, nhãn mô tả) để đặt thêm nút hoặc đổi mô tả về sau."""
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        text = ctk.CTkFrame(row, fg_color="transparent")
+        text.pack(side="left")
+        ctk.CTkLabel(text, text=T(title), font=self.F.b(size, strong=size >= 14), text_color=TEXT,
+                     height=20).pack(anchor="w")
+        sub_lbl = None
+        if sub is not None:
+            sub_lbl = ctk.CTkLabel(text, text=T(sub) if sub else "", font=self.F.b(11), text_color=TEXT2, height=16)
+            sub_lbl.pack(anchor="w")
+        if var is not None:
+            self.switch(row, var, command).pack(side="right")
+        return row, sub_lbl

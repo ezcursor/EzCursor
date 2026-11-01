@@ -171,31 +171,18 @@ class CursorTabMixin:
         row.pack(fill="x", pady=(2, 6))
         ctk.CTkLabel(row, text=T("Điểm click"), font=self.F.b(13), text_color=TEXT).pack(side="left")
         self.hot_map = {T(h): h for h in HOTSPOTS}
-        self.hot_seg = ctk.CTkSegmentedButton(row, values=list(self.hot_map),
-                                              command=lambda v: self.set_hotspot(self.hot_map[v]), height=30,
-                                              font=self.F.b(12), fg_color=FIELD, unselected_color=FIELD,
-                                              unselected_hover_color="#1A1E29", selected_color=mix(CARD, ACCENT, 0.35),
-                                              selected_hover_color=mix(CARD, ACCENT, 0.45), text_color=TEXT)
+        self.hot_seg = self.seg(row, list(self.hot_map), lambda v: self.set_hotspot(self.hot_map[v]),
+                                height=30, strong=False)
         self.hot_seg.set(T(self.cfg["hotspot"]))
         self.hot_seg.pack(side="right")
 
-        row = ctk.CTkFrame(inner, fg_color="transparent")
-        row.pack(fill="x", pady=(2, 0))
-        ctk.CTkLabel(row, text=T("Tô màu cho ảnh tải lên"), font=self.F.b(13), text_color=TEXT).pack(side="left")
         self.tint_var = tk.BooleanVar(value=self.cfg["tint_image"])
-        self.switch(row, self.tint_var, self.set_tint).pack(side="right")
-
-        row = ctk.CTkFrame(inner, fg_color="transparent")
-        row.pack(fill="x", pady=(8, 0))
-        ctk.CTkLabel(row, text=T("Quầng sáng quanh con trỏ"), font=self.F.b(13), text_color=TEXT).pack(side="left")
         self.glow_var = tk.BooleanVar(value=self.cfg["glow"])
-        self.switch(row, self.glow_var, self.set_glow).pack(side="right")
-
-        row = ctk.CTkFrame(inner, fg_color="transparent")
-        row.pack(fill="x", pady=(8, 0))
-        ctk.CTkLabel(row, text=T("Phóng theo tỉ lệ màn hình"), font=self.F.b(13), text_color=TEXT).pack(side="left")
         self.dpi_var = tk.BooleanVar(value=self.cfg["dpi_scale"])
-        self.switch(row, self.dpi_var, self.set_dpi_scale).pack(side="right")
+        for i, (title, var, cmd) in enumerate((("Tô màu cho ảnh tải lên", self.tint_var, self.set_tint),
+                                               ("Quầng sáng quanh con trỏ", self.glow_var, self.set_glow),
+                                               ("Phóng theo tỉ lệ màn hình", self.dpi_var, self.set_dpi_scale))):
+            self.option_row(inner, title, None, var, cmd, size=13)[0].pack(fill="x", pady=(2 if i == 0 else 8, 0))
         return page
 
     def build_preview_canvas(self):

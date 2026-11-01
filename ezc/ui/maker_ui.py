@@ -117,11 +117,7 @@ class MakerMixin:
 
         self.caps(right, "TÔ MÀU").pack(anchor="w", pady=(14, 6), **pad)
         fill_map = {T("Một màu"): "solid", "Ombre": "ombre", T("Kính mờ"): "glass"}
-        fill_seg = ctk.CTkSegmentedButton(right, values=list(fill_map), height=32, font=self.F.b(12, strong=True),
-                                          fg_color=FIELD, unselected_color=FIELD, unselected_hover_color="#1A1E29",
-                                          selected_color=mix(CARD, ACCENT, 0.35),
-                                          selected_hover_color=mix(CARD, ACCENT, 0.45), text_color=TEXT,
-                                          command=lambda v: (sp.update(fill=fill_map[v]), redraw()))
+        fill_seg = self.seg(right, list(fill_map), lambda v: (sp.update(fill=fill_map[v]), redraw()))
         fill_seg.pack(anchor="w", **pad)
         fill_seg.set({v: k for k, v in fill_map.items()}[sp["fill"]])
         color_row = ctk.CTkFrame(right, fg_color="transparent")
@@ -273,9 +269,7 @@ class MakerMixin:
             kind = dict((a, c) for a, _, c in MAKER_SHAPES)[sp["shape"]]
             for k, b in shape_btns.items():
                 on = k == sp["shape"]
-                b.configure(fg_color=mix(CARD, ACCENT, 0.16) if on else FIELD, border_color=ACCENT if on else BORDER,
-                            hover_color=mix(CARD, ACCENT, 0.24) if on else "#161A23",
-                            text_color="#FFFFFF" if on else TEXT2)
+                self.tile_style(b, on)
             show = {"width": True, "rot": sp["shape"] not in ("dot", "ring"),
                     "tail": kind == "poly" or sp["shape"] == "cross",
                     "thick": sp["shape"] in ("ring", "cross"), "round": kind == "poly"}

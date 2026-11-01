@@ -120,7 +120,7 @@ def test_every_screen_opens(app):
         for tab in list(app.pages):
             app.show_tab(tab)
             pump(app, 5)
-        for view in ("ez", "bibata", "mine", "online"):
+        for view in ("ez", "bibata", "mine", "online", "fav"):
             app.set_lib_view(view)
             pump(app, 5)
     app.open_maker()
@@ -342,6 +342,22 @@ def test_auto_contrast(app):
     app.cfg["all_apps"] = False
     pump(app)
     assert not app.active and not app.contrast_on
+
+
+def test_favorites_tab(app):
+    """Tab Yêu thích: mỗi con trỏ yêu thích một ô; bấm ô để dùng, bấm ☆ để bỏ khỏi Yêu thích."""
+    app.cfg["favorites"] = ["EzDrop", "ez_sword"]
+    app.show_tab("library")
+    app.set_lib_view("fav")
+    pump(app)
+    assert set(app.fav_tiles) == {"EzDrop", "ez_sword"}
+    app.fav_tiles["ez_sword"].invoke()
+    pump(app)
+    assert app.cfg["shape"] == "ez_sword"
+    app.fav_stars["EzDrop"].invoke()
+    pump(app)
+    assert app.cfg["favorites"] == ["ez_sword"] and set(app.fav_tiles) == {"ez_sword"}
+    assert not log_errors()
 
 
 def test_follow_runs_while_ui_busy(app):

@@ -1,4 +1,4 @@
-"""Tab Bộ sưu tập: Bibata, Con trỏ của bạn, Yêu thích."""
+"""Tab Bộ sưu tập: bộ EzCursor, Bibata, con trỏ của bạn, kho trực tuyến, Yêu thích."""
 
 import webbrowser
 import tkinter as tk
@@ -12,10 +12,10 @@ from ..base import MY_DIR
 from ..i18n import T
 from ..config import my_cursor_files
 from ..colors import mix
-from ..ombre import apply_ombre, ombre_lut, ombre_swatch, ombre_tmap
+from ..ombre import apply_ombre, ombre_lut, ombre_tmap
 from ..maker import maker_render
 from ..curfile import load_cursor_file
-from ..theme import ACCENT, BORDER, CARD, CYAN, CYAN_TEXT, FIELD, SWATCHES, TEXT, TEXT2
+from ..theme import ACCENT, BORDER, CARD, CYAN, CYAN_TEXT, FIELD, TEXT, TEXT2
 from ..icons import simple_icon, star_icon
 from ..bibata import (
     BIBATA_CURSORS, BIBATA_DIR, BIBATA_META, BIBATA_THEMES, OWN_BY_ID, OWN_CURSORS, bibata_colors,
@@ -25,124 +25,79 @@ from ..bibata import (
 class LibraryMixin:
     def build_library_tab(self, parent):
         page = ctk.CTkFrame(parent, fg_color="transparent")
-        self.page_top(page, "BỘ SƯU TẬP", "Con trỏ của EzCursor và bộ Bibata. Bấm vào con trỏ muốn dùng.", (0, 12))
-        self.bib_tiles, self.own_tiles = {}, {}
+        self.page_top(page, "BỘ SƯU TẬP", "Bấm vào con trỏ muốn dùng, bấm ☆ để thêm vào Yêu thích.", (0, 8))
+        self.bib_tiles, self.own_tiles, self.fav_tiles, self.fav_stars = {}, {}, {}, {}
+        self._fav_sig = self._fav_job = None
         if getattr(self, "lib_view", None) is None:
             self.lib_view = {"Bibata": "bibata", "Ảnh tải lên": "mine"}.get(self.cfg["shape"], "ez")
         has_bib = BIBATA_DIR.exists()
 
-        seg_kw = dict(height=34, font=self.F.b(12, strong=True), fg_color=FIELD, unselected_color=FIELD,
-                      unselected_hover_color="#1A1E29", selected_color=mix(CARD, ACCENT, 0.35),
-                      selected_hover_color=mix(CARD, ACCENT, 0.45), text_color=TEXT)
-        head = ctk.CTkFrame(page, fg_color="transparent")
-        head.pack(fill="x", pady=(0, 10))
-        self.view_map = {T("Bộ EzCursor"): "ez", "Bibata": "bibata", T("Của bạn"): "mine", T("Trực tuyến"): "online"}
+        # Hàng tab: mỗi bộ con trỏ một tab, tab đang xem được gạch chân
+        self.view_map = {"ez": T("Bộ EzCursor"), "bibata": "Bibata", "mine": T("Của bạn"),
+                         "online": T("Trực tuyến"), "fav": T("★ Yêu thích")}
         if not has_bib:
-            del self.view_map["Bibata"]
-        self.view_seg = ctk.CTkSegmentedButton(head, values=list(self.view_map),
-                                               command=lambda v: self.set_lib_view(self.view_map[v]),
-                                               **dict(seg_kw, height=36, font=self.F.b(13, strong=True)))
-        self.view_seg.pack(side="left")
-        self.view_seg.set({v: k for k, v in self.view_map.items()}[self.lib_view])
+            del self.view_map["bibata"]
+        tabs = ctk.CTkFrame(page, fg_color="transparent")
+        tabs.pack(fill="x")
+        ctk.CTkFrame(page, fg_color=BORDER, height=1, corner_radius=0).pack(fill="x")
+        self.view_tabs = {}
+        for view, label in self.view_map.items():
+            col = ctk.CTkFrame(tabs, fg_color="transparent")
+            col.pack(side="left", padx=(0, 14))
+            b = ctk.CTkButton(col, text=label, width=10, height=30, corner_radius=6, fg_color="transparent",
+                              hover_color=CARD, font=self.F.b(14, strong=True),
+                              command=lambda v=view: self.set_lib_view(v))
+            b.pack()
+            bar = ctk.CTkFrame(col, width=1, height=2, corner_radius=0, fg_color="transparent")
+            bar.pack(fill="x")
+            self.view_tabs[view] = (b, bar)
 
-        # Hàng chủ đề: mỗi nhóm một bộ nút
-        top = ctk.CTkFrame(page, fg_color="transparent")
-        top.pack(fill="x")
-        self.theme_caps = self.caps(top, "CHỦ ĐỀ")
-        self.theme_caps.pack(anchor="w")
-        self.chip_rows = {}
-        self.theme_buttons, self.own_theme_buttons = {}, {}
-        for view in ("ez", "bibata", "mine", "online"):
-            row = ctk.CTkFrame(top, fg_color="transparent")
-            self.chip_rows[view] = row
-        self.cyan_button(self.chip_rows["online"], "Làm mới", lambda: self.start_catalog(force=True),
-                         ctk.CTkImage(simple_icon("refresh", CYAN_TEXT, 32), size=(16, 16))).pack(side="left")
-        self.cat_label = ctk.CTkLabel(self.chip_rows["online"], text="", font=self.F.b(12), text_color=TEXT2,
-                                      wraplength=520, justify="left")
-        self.cat_label.pack(side="left", padx=(12, 0))
-        self.mine_theme_buttons = {}
-        for key, label in (("original", T("Màu gốc")), ("tint", T("Tô màu"))):
-            b = ctk.CTkButton(self.chip_rows["mine"], text=label, height=40, width=130, corner_radius=10,
-                              border_width=1, font=self.F.b(13, strong=True), compound="left",
-                              command=lambda k=key: self.set_mine_tint(k == "tint"))
-            b.pack(side="left", padx=(0, 8))
-            self.mine_theme_buttons[key] = b
-        self.mine_edit = ctk.CTkButton(head, text=T("Sửa con trỏ này"), command=self.edit_made_cursor, height=36,
-                                       corner_radius=10, border_width=1, border_color=ACCENT,
-                                       fg_color=mix(CARD, ACCENT, 0.10), hover_color=mix(CARD, ACCENT, 0.22),
-                                       text_color="#FFFFFF", font=self.F.b(12, strong=True))
-        self.mine_del = ctk.CTkButton(head, text=T("Xóa con trỏ này"), command=self.delete_my_cursor, height=36,
-                                      corner_radius=10, border_width=1, border_color="#FF5A5A",
+        # Thanh công cụ riêng từng tab: chủ đề màu, nút sửa / xóa, làm mới kho...
+        tools = ctk.CTkFrame(page, fg_color="transparent")
+        tools.pack(fill="x", pady=10)
+        self.tool_rows = {view: ctk.CTkFrame(tools, fg_color="transparent") for view in self.view_map}
+        self.theme_maps = {"ez": {T("Màu gốc"): "original", T("Tùy chỉnh"): "custom", "Ombre": "ombre"},
+                           "bibata": {**{v[0]: k for k, v in BIBATA_THEMES.items()}, T("Tùy chỉnh"): "custom",
+                                      "Ombre": "ombre"},
+                           "mine": {T("Màu gốc"): "original", T("Tô màu"): "tint", "Ombre": "ombre"}}
+        self.theme_segs, self.color_btns = {}, []
+        for view, themes in self.theme_maps.items():
+            if view not in self.tool_rows:
+                continue
+            row = self.tool_rows[view]
+            self.theme_segs[view] = self.seg(row, list(themes), height=30, command=lambda v, view=view: (
+                self.set_lib_theme(view, self.theme_maps[view][v])))
+            self.theme_segs[view].pack(side="left")
+            # màu cho chủ đề Tùy chỉnh (cũng là màu ở tab Con trỏ); bấm để chọn màu khác
+            b = ctk.CTkButton(row, text="", width=30, height=30, corner_radius=15, border_width=2,
+                              border_color="#FFFFFF", command=self.pick_bib_color)
+            b.pack(side="left", padx=(10, 0))
+            self.color_btns.append(b)
+        self.mine_del = ctk.CTkButton(self.tool_rows["mine"], text=T("Xóa con trỏ này"), command=self.delete_my_cursor,
+                                      height=30, corner_radius=8, border_width=1, border_color="#FF5A5A",
                                       fg_color=mix(CARD, "#FF5A5A", 0.10), hover_color=mix(CARD, "#FF5A5A", 0.22),
                                       text_color="#FF8A8A", font=self.F.b(12, strong=True),
                                       image=ctk.CTkImage(simple_icon("trash", "#FF8A8A", 32), size=(14, 14)))
-        own_themes = [("original", T("Màu gốc")), ("custom", T("Tùy chỉnh"))]
-        for key, label in own_themes:
-            b = ctk.CTkButton(self.chip_rows["ez"], text=label, height=40, width=130, corner_radius=10,
-                              border_width=1, font=self.F.b(13, strong=True), compound="left",
-                              command=lambda k=key: self.set_own_theme(k))
-            b.pack(side="left", padx=(0, 8))
-            self.own_theme_buttons[key] = b
-        self.ombre_chips = []
-        for view in ("ez", "bibata", "mine"):
-            b = ctk.CTkButton(self.chip_rows[view], text="Ombre", height=40, width=118, corner_radius=10,
-                              border_width=1, font=self.F.b(13, strong=True), compound="left",
-                              command=lambda v=view: self.lib_ombre(v))
-            self.ombre_chips.append(b)
-        themes = [(k, v[0]) for k, v in BIBATA_THEMES.items()] + [("custom", T("Tùy chỉnh"))]
-        for key, label in themes:
-            b = ctk.CTkButton(self.chip_rows["bibata"], text=label, height=40, width=118, corner_radius=10,
-                              border_width=1, font=self.F.b(13, strong=True), compound="left",
-                              command=lambda k=key: self.set_bib("bibata_theme", k))
-            b.pack(side="left", padx=(0, 8))
-            self.theme_buttons[key] = b
-        for b in self.ombre_chips:
-            b.pack(side="left", padx=(0, 8))
-
-        self.sw_caps = self.caps(page, "MÀU TÙY CHỈNH")
-        self.sw_caps.pack(anchor="w", pady=(12, 0))
-        sw = ctk.CTkFrame(page, fg_color="transparent")
-        sw.pack(fill="x", pady=(6, 12))
-        self.sw_row = sw
-        self.bib_swatches = {}
-        for c, name in SWATCHES:
-            b = ctk.CTkButton(sw, text="", width=32, height=32, corner_radius=16, fg_color=c,
-                              hover_color=mix(c, "#FFFFFF", 0.2), border_width=0,
-                              command=lambda c=c: self.set_bib_color(c))
-            b.pack(side="left", padx=(0, 7))
-            self.bib_swatches[c] = b
-        for c in ("#FFFFFF", "#000000"):
-            b = ctk.CTkButton(sw, text="", width=32, height=32, corner_radius=16, fg_color=c,
-                              hover_color=mix(c, "#808080", 0.25), border_width=1, border_color="#4A5266",
-                              command=lambda c=c: self.set_bib_color(c))
-            b.pack(side="left", padx=(0, 7))
-            self.bib_swatches[c] = b
-        self.bib_custom_btn = ctk.CTkButton(sw, text="", width=32, height=32, corner_radius=16,
-                                            image=ctk.CTkImage(simple_icon("plus", TEXT2, 32), size=(14, 14)),
-                                            fg_color="transparent", hover_color="#1A1E29", border_width=1,
-                                            border_color="#4A5266", command=self.pick_bib_color)
-        self.bib_custom_btn.pack(side="left")
-        # Kiểu Bibata nằm cùng hàng ô màu, chỉ hiện ở nhóm Bibata
-        self.bib_opts = ctk.CTkFrame(head, fg_color="transparent")
-        self.style_map = {T("Modern · bo tròn"): "modern", T("Original · góc nhọn"): "original"}
-        self.hand_map = {T("Thuận tay phải"): "right", T("Thuận tay trái"): "left"}
-        small = dict(seg_kw, height=36, font=self.F.b(12, strong=True))
-        self.hand_seg = ctk.CTkSegmentedButton(self.bib_opts, values=list(self.hand_map),
-                                               command=lambda v: self.set_bib("bibata_hand", self.hand_map[v]), **small)
-        self.hand_seg.pack(side="right")
-        self.style_seg = ctk.CTkSegmentedButton(self.bib_opts, values=list(self.style_map),
-                                                command=lambda v: self.set_bib("bibata_style", self.style_map[v]), **small)
-        self.style_seg.pack(side="right", padx=(0, 6))
-        self.style_seg.set({v: k for k, v in self.style_map.items()}.get(self.cfg["bibata_style"], T("Modern · bo tròn")))
-        self.hand_seg.set({v: k for k, v in self.hand_map.items()}.get(self.cfg["bibata_hand"], T("Thuận tay phải")))
+        self.mine_del.pack(side="right")
+        self.mine_edit = ctk.CTkButton(self.tool_rows["mine"], text=T("Sửa con trỏ này"), command=self.edit_made_cursor,
+                                       height=30, corner_radius=8, border_width=1, border_color=ACCENT,
+                                       fg_color=mix(CARD, ACCENT, 0.10), hover_color=mix(CARD, ACCENT, 0.22),
+                                       text_color="#FFFFFF", font=self.F.b(12, strong=True))
+        self.mine_edit.pack(side="right", padx=(0, 8))
+        self.cyan_button(self.tool_rows["online"], "Làm mới", lambda: self.start_catalog(force=True),
+                         ctk.CTkImage(simple_icon("refresh", CYAN_TEXT, 32), size=(16, 16))).pack(side="left")
+        self.cat_label = ctk.CTkLabel(self.tool_rows["online"], text="", font=self.F.b(12), text_color=TEXT2,
+                                      wraplength=520, justify="left")
+        self.cat_label.pack(side="left", padx=(12, 0))
+        ctk.CTkLabel(self.tool_rows["fav"], text=T("Ctrl+Alt+R đổi lần lượt giữa các con trỏ yêu thích."),
+                     font=self.F.b(12), text_color=TEXT2, height=30).pack(side="left")
 
         grid = self.card(page)
         grid.pack(fill="both", expand=True)
-        self.lib_card = grid
         cols = 5
         self.lib_grids = {}
-        for view in ("ez", "bibata", "mine", "online"):
-            if view in ("mine", "online"):
+        for view in self.view_map:
+            if view in ("mine", "online", "fav"):
                 inner = ctk.CTkScrollableFrame(grid, fg_color="transparent", scrollbar_button_color=BORDER,
                                                scrollbar_button_hover_color="#3A4152")
             else:
@@ -171,13 +126,22 @@ class LibraryMixin:
                 self.bib_tiles[name] = b
                 self.add_star(b, "bib:" + name)
 
-        foot = ctk.CTkFrame(page, fg_color="transparent")
-        foot.pack(fill="x", pady=(10, 0))
-        ctk.CTkLabel(foot, text=T("Bấm ☆ để thêm vào Yêu thích. Ctrl+Alt+R sẽ chỉ đổi giữa các con trỏ yêu thích."),
-                     font=self.F.b(12), text_color=TEXT2).pack(side="left")
-        self.bib_link = ctk.CTkLabel(foot, text="Bibata © Abdulkaiz Khatri · GPL-3.0", font=self.F.b(12),
-                                     text_color=CYAN_TEXT, cursor="hand2")
-        self.bib_link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/ful1e5/Bibata_Cursor"))
+        # Dưới lưới Bibata: kiểu bo góc, tay thuận và ghi công tác giả
+        self.lib_foot = ctk.CTkFrame(page, fg_color="transparent")
+        self.style_map = {T("Modern · bo tròn"): "modern", T("Original · góc nhọn"): "original"}
+        self.hand_map = {T("Thuận tay phải"): "right", T("Thuận tay trái"): "left"}
+        self.style_seg = self.seg(self.lib_foot, list(self.style_map), height=30,
+                                  command=lambda v: self.set_bib("bibata_style", self.style_map[v]))
+        self.style_seg.pack(side="left")
+        self.hand_seg = self.seg(self.lib_foot, list(self.hand_map), height=30,
+                                 command=lambda v: self.set_bib("bibata_hand", self.hand_map[v]))
+        self.hand_seg.pack(side="left", padx=(8, 0))
+        self.style_seg.set({v: k for k, v in self.style_map.items()}.get(self.cfg["bibata_style"], T("Modern · bo tròn")))
+        self.hand_seg.set({v: k for k, v in self.hand_map.items()}.get(self.cfg["bibata_hand"], T("Thuận tay phải")))
+        link = ctk.CTkLabel(self.lib_foot, text="Bibata © Abdulkaiz Khatri · GPL-3.0", font=self.F.b(12),
+                            text_color=CYAN_TEXT, cursor="hand2")
+        link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/ful1e5/Bibata_Cursor"))
+        link.pack(side="right")
         self._lib_sig = None
         self._own_sig = None
         self.rebuild_mine_tiles()
@@ -244,45 +208,35 @@ class LibraryMixin:
 
     def show_lib_view(self):
         v = self.lib_view
-        for view, row in self.chip_rows.items():
-            row.pack_forget()
-        self.chip_rows[v].pack(fill="x", pady=(6, 0))
-        if v == "online":
-            self.theme_caps.pack_forget()
-        else:
-            self.theme_caps.pack(anchor="w", before=self.chip_rows[v])
-        try:
-            self.view_seg.set({k2: k for k, k2 in self.view_map.items()}[v])
-        except (KeyError, tk.TclError):
-            pass
-        for view, g in self.lib_grids.items():
-            g.pack_forget()
+        for view, (b, bar) in self.view_tabs.items():
+            b.configure(text_color="#FFFFFF" if view == v else TEXT2)
+            bar.configure(fg_color=ACCENT if view == v else "transparent")
+        for view, w in list(self.tool_rows.items()) + list(self.lib_grids.items()):
+            w.pack_forget()
+        self.tool_rows[v].pack(fill="x")
         self.lib_grids[v].pack(fill="both", expand=True, padx=10, pady=10)
         if v == "bibata":
-            self.bib_opts.pack(side="right", anchor="e")
-            self.bib_link.pack(side="right")
+            self.lib_foot.pack(fill="x", pady=(10, 0))
         else:
-            self.bib_opts.pack_forget()
-            self.bib_link.pack_forget()
-        if v == "mine":
-            self.mine_del.pack(side="right")
-            self.mine_edit.pack(side="right", padx=(0, 8))
-        else:
-            self.mine_del.pack_forget()
-            self.mine_edit.pack_forget()
-        if v == "online":
-            self.sw_caps.pack_forget()
-            self.sw_row.pack_forget()
-            if self.cat_entries is None and not self.cat_busy:
-                self.start_catalog()
-        elif not self.sw_row.winfo_ismapped():
-            self.sw_caps.pack(anchor="w", pady=(12, 0), before=self.lib_card)
-            self.sw_row.pack(fill="x", pady=(6, 12), before=self.lib_card)
+            self.lib_foot.pack_forget()
+        if v == "online" and self.cat_entries is None and not self.cat_busy:
+            self.start_catalog()
 
     def set_lib_view(self, view):
         self.lib_view = view
         self.show_lib_view()
         self.update_library()
+
+    def set_lib_theme(self, view, theme):
+        """Nút chủ đề trên thanh công cụ của từng tab."""
+        if theme == "ombre":
+            self.lib_ombre(view)
+        elif view == "ez":
+            self.set_own_theme(theme)
+        elif view == "bibata":
+            self.set_bib("bibata_theme", theme)
+        else:
+            self.set_mine_tint(theme == "tint")
 
     def set_own_theme(self, theme):
         self.cfg["own_theme"] = theme
@@ -320,7 +274,7 @@ class LibraryMixin:
             self.cfg["shape"] = "Bibata"
         self.refresh()
 
-    def add_star(self, tile, fid):
+    def add_star(self, tile, fid, store=None):
         if not hasattr(self, "star_imgs"):
             self.star_imgs = {True: ctk.CTkImage(star_icon(True, "#FFC940", 32), size=(15, 15)),
                               False: ctk.CTkImage(star_icon(False, "#6B7488", 32), size=(15, 15))}
@@ -328,7 +282,7 @@ class LibraryMixin:
                            hover_color="#2A3040", border_width=0, image=self.star_imgs[False],
                            command=lambda: self.toggle_fav(fid))
         sb.place(relx=1.0, x=-5, y=5, anchor="ne")
-        self.star_btns[fid] = sb
+        (self.star_btns if store is None else store)[fid] = sb
 
     def toggle_fav(self, fid):
         favs = list(self.cfg["favorites"])
@@ -383,14 +337,7 @@ class LibraryMixin:
 
     def update_library(self):
         self._update_library()
-        c = self.cfg
-        oimg = ctk.CTkImage(ombre_swatch(c["ombre_colors"], 32), size=(16, 16))
-        for b in getattr(self, "ombre_chips", []):
-            try:
-                self._chip_style(b, c["ombre"], oimg)
-            except tk.TclError:
-                pass
-        for sb in getattr(self, "star_btns", {}).values():
+        for sb in list(getattr(self, "star_btns", {}).values()) + list(getattr(self, "fav_stars", {}).values()):
             try:
                 col = sb.master.cget("fg_color")
                 hov = sb.master.cget("hover_color")
@@ -401,23 +348,17 @@ class LibraryMixin:
                 pass
 
     def _update_library(self):
-        if getattr(self, "bib_swatches", None) is None:
+        if getattr(self, "theme_segs", None) is None:
             return
         c = self.cfg
-        view = self.lib_view
-        for key, b in self.own_theme_buttons.items():
-            img = (ctk.CTkImage(own_image("EzDrop").resize((32, 32), Image.LANCZOS), size=(16, 16))
-                   if key == "original" and own_image("EzDrop") is not None else self._chip_dot(c["color"]))
-            self._chip_style(b, key == c["own_theme"] and not c["ombre"], img)
-        for key, b in self.theme_buttons.items():
-            col = BIBATA_THEMES[key][1] if key in BIBATA_THEMES else c["color"]
-            self._chip_style(b, key == c["bibata_theme"] and not c["ombre"], self._chip_dot(col))
-        for key, b in getattr(self, "mine_theme_buttons", {}).items():
-            img = (self._chip_dot(c["color"]) if key == "tint" or own_image("EzDrop") is None
-                   else ctk.CTkImage(own_image("EzDrop").resize((32, 32), Image.LANCZOS), size=(16, 16)))
-            self._chip_style(b, (key == "tint") == bool(c["tint_image"]) and not c["ombre"], img)
+        current = {"ez": c["own_theme"], "bibata": c["bibata_theme"], "mine": "tint" if c["tint_image"] else "original"}
+        for view, seg in self.theme_segs.items():
+            key = "ombre" if c["ombre"] else current[view]
+            seg.set({k: v for v, k in self.theme_maps[view].items()}.get(key, ""))
+        for b in self.color_btns:
+            b.configure(fg_color=c["color"], hover_color=c["color"])
         favs = set(c["favorites"])
-        for fid, sb in getattr(self, "star_btns", {}).items():
+        for fid, sb in list(self.star_btns.items()) + list(self.fav_stars.items()):
             on = fid in favs
             if getattr(sb, "_fav_on", None) != on:
                 sb._fav_on = on
@@ -426,40 +367,17 @@ class LibraryMixin:
                 except tk.TclError:
                     pass
         mine_sel = c["image"] if c["shape"] == "Ảnh tải lên" else None
-        for path, b in getattr(self, "mine_tiles", {}).items():
-            on = path == mine_sel
-            b.configure(fg_color=mix(CARD, ACCENT, 0.16) if on else FIELD,
-                        hover_color=mix(CARD, ACCENT, 0.24) if on else "#161A23",
-                        border_color=ACCENT if on else BORDER, text_color="#FFFFFF" if on else TEXT2)
+        for path, b in self.mine_tiles.items():
+            self.tile_style(b, path == mine_sel)
         for cid, b in getattr(self, "cat_tiles", {}).items():
             f = self.cat_file(cid)
-            on = mine_sel is not None and f is not None and Path(mine_sel) == f
             try:
-                b.configure(fg_color=mix(CARD, ACCENT, 0.16) if on else FIELD,
-                            hover_color=mix(CARD, ACCENT, 0.24) if on else "#161A23",
-                            border_color=ACCENT if on else BORDER, text_color="#FFFFFF" if on else TEXT2)
+                self.tile_style(b, mine_sel is not None and f is not None and Path(mine_sel) == f)
             except tk.TclError:
                 pass
-        if getattr(self, "mine_del", None):
-            self.mine_del.configure(state="normal" if mine_sel and mine_sel in self.mine_tiles else "disabled")
-            made = mine_sel and mine_sel in self.mine_tiles and Path(mine_sel).name in c["made_cursors"]
-            self.mine_edit.configure(state="normal" if made else "disabled")
-        custom_on = {"ez": c["own_theme"] == "custom", "bibata": c["bibata_theme"] == "custom",
-                     "mine": bool(c["tint_image"])}.get(view, False) and not c["ombre"]
-        known = set()
-        for col, b in self.bib_swatches.items():
-            known.add(col.lower())
-            on = custom_on and col.lower() == c["color"].lower()
-            plain = col in ("#FFFFFF", "#000000")
-            b.configure(border_width=3 if on else (1 if plain else 0),
-                        border_color=ACCENT if (on and col == "#FFFFFF") else ("#FFFFFF" if on else "#4A5266"))
-        if custom_on and c["color"].lower() not in known:
-            self.bib_custom_btn.configure(fg_color=c["color"], hover_color=c["color"], border_width=3,
-                                          border_color="#FFFFFF", image=None)
-        else:
-            self.bib_custom_btn.configure(fg_color="transparent", hover_color="#1A1E29", border_width=1,
-                                          border_color="#4A5266",
-                                          image=ctk.CTkImage(simple_icon("plus", TEXT2, 32), size=(14, 14)))
+        self.mine_del.configure(state="normal" if mine_sel and mine_sel in self.mine_tiles else "disabled")
+        made = mine_sel and mine_sel in self.mine_tiles and Path(mine_sel).name in c["made_cursors"]
+        self.mine_edit.configure(state="normal" if made else "disabled")
         # hình trên ô: chỉ vẽ lại khi đổi chủ đề / màu
         oc = tuple(c["ombre_colors"]) if c["ombre"] else None
         osig = (c["own_theme"], c["color"].lower() if c["own_theme"] == "custom" else "", oc)
@@ -488,12 +406,46 @@ class LibraryMixin:
                     b.configure(image=ctk.CTkImage(im, size=(56, 56)))
         tile_bg = mix(FIELD, "#FFFFFF", 0.05) if c["bibata_theme"] == "classic" else FIELD
         for shape, tile in self.own_tiles.items():
-            on = c["shape"] == shape
-            tile.configure(fg_color=mix(CARD, ACCENT, 0.16) if on else FIELD,
-                           hover_color=mix(CARD, ACCENT, 0.24) if on else "#161A23",
-                           border_color=ACCENT if on else BORDER, text_color="#FFFFFF" if on else TEXT)
+            self.tile_style(tile, c["shape"] == shape, text=TEXT)
         for name, b in self.bib_tiles.items():
-            on = c["shape"] == "Bibata" and name == c["bibata_cursor"]
-            b.configure(fg_color=mix(CARD, ACCENT, 0.16) if on else tile_bg,
-                        hover_color=mix(CARD, ACCENT, 0.24) if on else "#161A23",
-                        border_color=ACCENT if on else BORDER, text_color="#FFFFFF" if on else TEXT2)
+            self.tile_style(b, c["shape"] == "Bibata" and name == c["bibata_cursor"], idle=tile_bg)
+        # lưới Yêu thích dựng lại sau một nhịp: nút ☆ vừa bấm có thể nằm trong chính lưới đó
+        if self._fav_job is None:
+            self._fav_job = self.ov.after(150, self.update_favs)
+
+    def update_favs(self):
+        """Lưới Yêu thích: ô lấy lại hình của con trỏ gốc, dựng lại khi danh sách hoặc hình đổi."""
+        self._fav_job = None
+        grid = self.lib_grids.get("fav")
+        try:
+            if grid is None or not grid.winfo_exists():
+                return
+        except tk.TclError:
+            return
+        favs = [f for f in self.cfg["favorites"] if self.fav_valid(f)]
+        sig = (tuple(favs), self._own_sig, self._lib_sig, self.mine_sig)
+        if sig != self._fav_sig:
+            self._fav_sig = sig
+            for w in grid.winfo_children():
+                w.destroy()
+            self.fav_tiles, self.fav_stars = {}, {}
+            src = {**self.own_tiles, **{"bib:" + k: b for k, b in self.bib_tiles.items()},
+                   **{"my:" + Path(k).name: b for k, b in self.mine_tiles.items()}}
+            for i, fid in enumerate(favs):
+                name = self.fav_label(fid)
+                b = ctk.CTkButton(grid, text=name if len(name) <= 18 else name[:16] + "…", compound="top", height=94,
+                                  width=10, corner_radius=12, border_width=1, font=self.F.b(12),
+                                  image=src[fid].cget("image") if fid in src else None,
+                                  command=lambda f=fid: self.use_fav(f))
+                b.grid(row=i // 5, column=i % 5, sticky="ew", padx=4, pady=4)
+                self.fav_tiles[fid] = b
+                self.add_star(b, fid, self.fav_stars)
+            if not favs:
+                ctk.CTkLabel(grid, text=T("Chưa có con trỏ yêu thích. Bấm ☆ trên một con trỏ ở các tab khác "
+                                          "để thêm vào đây."), font=self.F.b(12), text_color=TEXT2,
+                             wraplength=560, justify="left").grid(row=0, column=0, columnspan=5, sticky="w",
+                                                                   padx=12, pady=12)
+            self.update_library()
+        cur = self.current_fav_id()
+        for fid, b in self.fav_tiles.items():
+            self.tile_style(b, fid == cur)

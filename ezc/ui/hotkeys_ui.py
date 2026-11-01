@@ -15,10 +15,7 @@ from ..theme import ACCENT, AMBER, BG, MUTED, PRESET_COLORS, TEXT, TEXT2
 class HotkeysMixin:
     def update_hotkey_ui(self):
         hk = self.cfg["hotkeys"]
-        boxes = dict(getattr(self, "hotkey_caps", {}))
-        if getattr(self, "lock_caps", None) is not None:      # phím giữ / thả chuột nằm ở tab Ứng dụng
-            boxes["lock"] = self.lock_caps
-        for act, caps in boxes.items():
+        for act, caps in getattr(self, "hotkey_caps", {}).items():
             for w in caps.winfo_children():
                 w.destroy()
             for key in hotkey_parts(hk[act], act):

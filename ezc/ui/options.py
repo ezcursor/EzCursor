@@ -19,115 +19,84 @@ from ..i18n import LANGUAGES, T
 from ..config import ProfileCfg, default_cfg, my_cursor_files
 from ..colors import mix
 from ..display import monitor_scale
-from ..theme import ACCENT, CARD, CYAN, CYAN_TEXT, FIELD, LINE, MUTED, TEXT, TEXT2
+from ..theme import ACCENT, CARD, CYAN, CYAN_TEXT, FIELD, LINE, MUTED, TEXT2
 
 
 class OptionsMixin:
     def build_options_tab(self, parent):
         page = ctk.CTkFrame(parent, fg_color="transparent")
         self.header(page, "TÙY CHỌN", "Cài đặt chung, cập nhật và phím tắt.").pack(anchor="w", pady=(0, 8))
-
         box = self.card(page)
         box.pack(fill="x")
 
-        r = ctk.CTkFrame(box, fg_color="transparent")
-        r.pack(fill="x", padx=18, pady=(3, 0))
-        t = ctk.CTkFrame(r, fg_color="transparent")
-        t.pack(side="left")
-        ctk.CTkLabel(t, text=T("Ngôn ngữ"), font=self.F.b(14, strong=True), text_color=TEXT, height=20).pack(anchor="w")
-        ctk.CTkLabel(t, text=T("Ngôn ngữ hiển thị của EzCursor."), font=self.F.b(12), text_color=TEXT2,
-                     height=18).pack(anchor="w")
-        self.lang_map = {name: code for code, name in LANGUAGES}
-        self.lang_seg = ctk.CTkSegmentedButton(
-            r, values=list(self.lang_map), command=lambda v: self.set_language(self.lang_map[v]), height=32,
-            font=self.F.b(12, strong=True), fg_color=FIELD, unselected_color=FIELD,
-            unselected_hover_color="#1A1E29", selected_color=mix(CARD, ACCENT, 0.35),
-            selected_hover_color=mix(CARD, ACCENT, 0.45), text_color=TEXT)
-        self.lang_seg.set(dict(LANGUAGES)[self.cfg["language"]])
-        self.lang_seg.pack(side="right")
-        ctk.CTkFrame(box, fg_color=LINE, height=1, corner_radius=0).pack(fill="x", padx=18, pady=(3, 0))
+        def section(title):
+            """Nhóm cài đặt: tiêu đề nhỏ + lưới hai cột."""
+            self.caps(box, title).pack(anchor="w", padx=18, pady=(8, 0))
+            grid = ctk.CTkFrame(box, fg_color="transparent")
+            grid.pack(fill="x", padx=18)
+            grid.grid_columnconfigure((0, 1), weight=1, uniform="o")
+            return grid
 
-        if REAL_CURSOR_MODE:
-            r = ctk.CTkFrame(box, fg_color="transparent")
-            r.pack(fill="x", padx=18, pady=(3, 0))
-            t = ctk.CTkFrame(r, fg_color="transparent")
-            t.pack(side="left")
-            ctk.CTkLabel(t, text=T("Chế độ con trỏ"), font=self.F.b(14, strong=True), text_color=TEXT,
-                         height=20).pack(anchor="w")
-            self.mode_sub = ctk.CTkLabel(t, text="", font=self.F.b(12), text_color=TEXT2, height=18)
-            self.mode_sub.pack(anchor="w")
-            self.mode_map = {T("Lớp phủ"): "overlay", T("Con trỏ thật"): "system"}
-            self.mode_seg = ctk.CTkSegmentedButton(
-                r, values=list(self.mode_map), command=lambda v: self.set_cursor_mode(self.mode_map[v]), height=32,
-                font=self.F.b(12, strong=True), fg_color=FIELD, unselected_color=FIELD,
-                unselected_hover_color="#1A1E29", selected_color=mix(CARD, ACCENT, 0.35),
-                selected_hover_color=mix(CARD, ACCENT, 0.45), text_color=TEXT)
-            self.mode_seg.pack(side="right")
-            ctk.CTkFrame(box, fg_color=LINE, height=1, corner_radius=0).pack(fill="x", padx=18, pady=(3, 0))
-            self.update_mode_ui()
+        def place(grid, i, row):
+            row.grid(row=i // 2, column=i % 2, sticky="ew", padx=(0, 28) if i % 2 == 0 else 0, pady=3)
+
+        def toggles(grid, items, start=0):
+            for i, (title, sub, var, cmd) in enumerate(items, start):
+                place(grid, i, self.option_row(grid, title, sub, var, cmd, size=13)[0])
 
         self.hide_var = tk.BooleanVar(value=self.cfg["hide_real"])
+        self.lock_var = tk.BooleanVar(value=self.cfg["lock_cursor"])
+        self.taskbar_var = tk.BooleanVar(value=self.cfg["keep_taskbar"])
+        self.predict_var = tk.BooleanVar(value=self.cfg["predict"])
+        self.shake_var = tk.BooleanVar(value=self.cfg["find_shake"])
         self.startup_var = tk.BooleanVar(value=is_startup_enabled())
         self.auto_upd_var = tk.BooleanVar(value=self.cfg["auto_check_update"])
         self.splash_var = tk.BooleanVar(value=self.cfg["splash"])
-        self.taskbar_var = tk.BooleanVar(value=self.cfg["keep_taskbar"])
-        self.predict_var = tk.BooleanVar(value=self.cfg["predict"])
-        rows = [("Ẩn con trỏ thật của game", "Chỉ hiện con trỏ của EzCursor khi đang ở trong game.",
-                 self.hide_var, self.set_hide),
-                ("Khởi động cùng Windows", "Chạy ngầm dưới khay hệ thống khi bật máy.",
-                 self.startup_var, self.set_startup_opt),
-                ("Tự động kiểm tra cập nhật", "Thông báo khi có phiên bản mới trên GitHub.",
-                 self.auto_upd_var, self.set_auto_update),
-                ("Giữ con trỏ trên thanh taskbar", "Rê chuột xuống taskbar vẫn dùng con trỏ EzCursor.",
-                 self.taskbar_var, self.set_keep_taskbar),
-                ("Đoán trước vị trí con trỏ", "Bù thêm nửa khung hình khi rê nhanh; có thể trượt nhẹ khi đổi hướng.",
-                 self.predict_var, self.set_predict),
-                ("Màn hình chào khi mở", "Hiện logo động khoảng 2 giây mỗi lần mở EzCursor.",
-                 self.splash_var, self.set_splash)]
-        for title, sub, var, cmd in rows:
-            r = ctk.CTkFrame(box, fg_color="transparent")
-            r.pack(fill="x", padx=18, pady=(3, 0))
-            t = ctk.CTkFrame(r, fg_color="transparent")
-            t.pack(side="left")
-            ctk.CTkLabel(t, text=T(title), font=self.F.b(14, strong=True), text_color=TEXT, height=20).pack(anchor="w")
-            ctk.CTkLabel(t, text=T(sub), font=self.F.b(12), text_color=TEXT2, height=18).pack(anchor="w")
-            self.switch(r, var, cmd).pack(side="right")
-            ctk.CTkFrame(box, fg_color=LINE, height=1, corner_radius=0).pack(fill="x", padx=18, pady=(3, 0))
+        self.stream_var = tk.BooleanVar(value=self.stream is not None)
+
+        game = section("TRONG GAME")
+        if REAL_CURSOR_MODE:
+            row, self.mode_sub = self.option_row(game, "Chế độ con trỏ", "", size=13)
+            row.grid(row=9, column=0, columnspan=2, sticky="ew", pady=3)
+            self.mode_map = {T("Lớp phủ"): "overlay", T("Con trỏ thật"): "system"}
+            self.mode_seg = self.seg(row, list(self.mode_map), lambda v: self.set_cursor_mode(self.mode_map[v]),
+                                     height=28)
+            self.mode_seg.pack(side="right")
+            self.update_mode_ui()
+        toggles(game, [("Ẩn con trỏ thật của game", "Chỉ hiện con trỏ EzCursor trong game.",
+                        self.hide_var, self.set_hide),
+                       ("Giữ chuột trong cửa sổ game", "Không lỡ click sang màn hình khác.",
+                        self.lock_var, self.set_lock_cursor),
+                       ("Giữ con trỏ trên thanh taskbar", "Vẫn dùng con trỏ EzCursor trên taskbar.",
+                        self.taskbar_var, self.set_keep_taskbar),
+                       ("Đoán trước vị trí con trỏ", "Bù nửa khung hình khi rê nhanh.",
+                        self.predict_var, self.set_predict),
+                       ("Lắc chuột để tìm", "Lắc nhanh là con trỏ phóng to, dễ thấy.",
+                        self.shake_var, self.set_find_shake)])
+
+        app = section("ỨNG DỤNG")
+        row, _ = self.option_row(app, "Ngôn ngữ", size=13)
+        place(app, 0, row)
+        self.lang_map = {name: code for code, name in LANGUAGES}
+        self.lang_seg = self.seg(row, list(self.lang_map), lambda v: self.set_language(self.lang_map[v]), height=28)
+        self.lang_seg.set(dict(LANGUAGES)[self.cfg["language"]])
+        self.lang_seg.pack(side="right")
+        toggles(app, [("Khởi động cùng Windows", "Chạy ngầm dưới khay khi bật máy.",
+                       self.startup_var, self.set_startup_opt),
+                      ("Tự động kiểm tra cập nhật", "Báo khi có phiên bản mới trên GitHub.",
+                       self.auto_upd_var, self.set_auto_update),
+                      ("Màn hình chào khi mở", "Logo động khoảng 2 giây.", self.splash_var, self.set_splash)], start=1)
 
         # Chế độ stream (OBS): link + nút sao chép chỉ hiện khi đang bật
-        self.stream_var = tk.BooleanVar(value=self.stream is not None)
-        r = ctk.CTkFrame(box, fg_color="transparent")
-        r.pack(fill="x", padx=18, pady=(3, 0))
-        t = ctk.CTkFrame(r, fg_color="transparent")
-        t.pack(side="left")
-        ctk.CTkLabel(t, text=T("Hiện con trỏ trên stream (OBS)"), font=self.F.b(14, strong=True), text_color=TEXT,
-                     height=20).pack(anchor="w")
-        self.stream_sub = ctk.CTkLabel(t, text="", font=self.F.b(12), text_color=TEXT2, height=18)
-        self.stream_sub.pack(anchor="w")
-        self.switch(r, self.stream_var, self.set_stream).pack(side="right")
-        self.stream_copy = ctk.CTkButton(r, text=T("Sao chép link"), command=self.copy_stream_link, width=10,
+        self.caps(box, "STREAM").pack(anchor="w", padx=18, pady=(8, 0))
+        row, self.stream_sub = self.option_row(box, "Hiện con trỏ trên stream (OBS)", "", self.stream_var,
+                                               self.set_stream, size=13)
+        row.pack(fill="x", padx=18, pady=(3, 10))
+        self.stream_copy = ctk.CTkButton(row, text=T("Sao chép link"), command=self.copy_stream_link, width=10,
                                          height=28, corner_radius=8, border_width=1, border_color=CYAN,
                                          fg_color=mix(CARD, CYAN, 0.10), hover_color=mix(CARD, CYAN, 0.22),
                                          text_color=CYAN_TEXT, font=self.F.b(12, strong=True))
         self.update_stream_ui()
-        ctk.CTkFrame(box, fg_color=LINE, height=1, corner_radius=0).pack(fill="x", padx=18, pady=(3, 0))
-
-        r = ctk.CTkFrame(box, fg_color="transparent")
-        r.pack(fill="x", padx=18, pady=8)
-        t = ctk.CTkFrame(r, fg_color="transparent")
-        t.pack(side="left")
-        v = ctk.CTkFrame(t, fg_color="transparent")
-        v.pack(anchor="w")
-        ctk.CTkLabel(v, text=T("Phiên bản "), font=self.F.b(14, strong=True), text_color=TEXT, height=20).pack(side="left")
-        ctk.CTkLabel(v, text=APP_VERSION, font=self.F.m(13), text_color=ACCENT, height=20).pack(side="left")
-        self.upd_label = ctk.CTkLabel(t, text="", font=self.F.b(12), text_color=TEXT2, height=18)
-        self.upd_label.pack(anchor="w")
-        ctk.CTkButton(r, text=T("Khôi phục cài đặt gốc"), command=self.reset_settings, height=40, width=10,
-                      corner_radius=10, border_width=1, border_color="#FF5A5A", fg_color=mix(CARD, "#FF5A5A", 0.10),
-                      hover_color=mix(CARD, "#FF5A5A", 0.22), text_color="#FF8A8A",
-                      font=self.F.b(13, strong=True)).pack(side="right")
-        self.cyan_button(r, "Kiểm tra cập nhật", lambda: self.check_update(manual=True)).pack(side="right", padx=(0, 8))
-        self.cyan_button(r, "Mở thư mục log", self.open_log_folder).pack(side="right", padx=(0, 8))
 
         hk = self.card(page)
         hk.pack(fill="x", pady=(8, 0))
@@ -143,8 +112,8 @@ class OptionsMixin:
         grid.pack(fill="x", padx=12, pady=(0, 12))
         grid.grid_columnconfigure((0, 1, 2), weight=1, uniform="h")
         self.hotkey_caps = {}
-        keys = [("toggle", "Bật / tắt"), ("shape", "Đổi hình dạng"), ("color", "Đổi màu"), ("quit", "Thoát"),
-                ("find", "Tìm con trỏ")]
+        keys = [("toggle", "Bật / tắt"), ("shape", "Đổi hình dạng"), ("color", "Đổi màu"), ("find", "Tìm con trỏ"),
+                ("lock", "Giữ / thả chuột"), ("quit", "Thoát")]
         for i, (act, desc) in enumerate(keys):
             cell = ctk.CTkFrame(grid, fg_color=FIELD, border_color=LINE, border_width=1, corner_radius=10,
                                 cursor="hand2")
@@ -158,13 +127,21 @@ class OptionsMixin:
                 w.bind("<Button-1>", lambda e, a=act: self.capture_hotkey(a))
                 w.bind("<Enter>", lambda e, c=cell: c.configure(border_color=ACCENT))
                 w.bind("<Leave>", lambda e, c=cell: c.configure(border_color=LINE))
-        cell = ctk.CTkFrame(grid, fg_color=FIELD, border_color=LINE, border_width=1, corner_radius=10)
-        cell.grid(row=1, column=2, sticky="ew", padx=4, pady=4)
-        ctk.CTkLabel(cell, text=T("Lắc chuột để tìm"), font=self.F.b(13), text_color="#C9CFDB").pack(
-            side="left", padx=(12, 4), pady=10)
-        self.shake_var = tk.BooleanVar(value=self.cfg["find_shake"])
-        self.switch(cell, self.shake_var, self.set_find_shake).pack(side="right", padx=(0, 8))
         self.update_hotkey_ui()
+
+        # Chân trang: phiên bản, cập nhật, log; khôi phục cài đặt gốc để nhỏ, tách riêng
+        foot = ctk.CTkFrame(page, fg_color="transparent")
+        foot.pack(fill="x", pady=(8, 0))
+        ctk.CTkLabel(foot, text=T("Phiên bản "), font=self.F.b(12), text_color=TEXT2).pack(side="left", padx=(6, 0))
+        ctk.CTkLabel(foot, text=APP_VERSION, font=self.F.m(12), text_color=ACCENT).pack(side="left")
+        self.upd_label = ctk.CTkLabel(foot, text="", font=self.F.b(12), text_color=TEXT2)
+        self.upd_label.pack(side="left", padx=(10, 0))
+        for text, cmd, color in (("Khôi phục cài đặt gốc…", self.reset_settings, "#FF8A8A"),
+                                 ("Mở thư mục log", self.open_log_folder, CYAN_TEXT),
+                                 ("Kiểm tra cập nhật", lambda: self.check_update(manual=True), CYAN_TEXT)):
+            ctk.CTkButton(foot, text=T(text), command=cmd, width=10, height=26, corner_radius=6,
+                          fg_color="transparent", hover_color="#1A1E29", text_color=color,
+                          font=self.F.b(12, strong=True)).pack(side="right")
         return page
 
     def set_find_shake(self):
@@ -267,6 +244,10 @@ class OptionsMixin:
 
     def set_keep_taskbar(self):
         self.cfg["keep_taskbar"] = bool(self.taskbar_var.get())
+        self.save()
+
+    def set_lock_cursor(self):
+        self.cfg["lock_cursor"] = bool(self.lock_var.get())
         self.save()
 
     def set_splash(self):

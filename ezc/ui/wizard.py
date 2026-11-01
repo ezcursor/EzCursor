@@ -143,11 +143,7 @@ class WizardMixin:
             row.pack(fill="x", pady=(16, 0))
             self.caps(row, "KÍCH THƯỚC").pack(side="left", padx=(0, 12))
             sizes = {T("Nhỏ"): 48, T("Vừa"): 64, T("Lớn"): 88}
-            seg = ctk.CTkSegmentedButton(row, values=list(sizes), height=36, font=self.F.b(13, strong=True),
-                                         fg_color=FIELD, unselected_color=FIELD, unselected_hover_color="#1A1E29",
-                                         selected_color=mix(CARD, ACCENT, 0.35),
-                                         selected_hover_color=mix(CARD, ACCENT, 0.45), text_color=TEXT,
-                                         command=lambda v: st.update(size=sizes[v]))
+            seg = self.seg(row, list(sizes), lambda v: st.update(size=sizes[v]), height=36, size=13)
             seg.pack(side="left")
             name_lbl.pack(in_=row, side="right")
             name_lbl.lift()

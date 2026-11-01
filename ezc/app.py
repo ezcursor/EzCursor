@@ -112,7 +112,6 @@ class App(
         self.follow = CursorFollower()   # luồng riêng bám chuột, sở hữu cửa sổ con trỏ
         self.ovl = OverlayMirror(self.follow.ovl)       # gương sang chế độ stream (OBS) khi bật
         self.fx = FxEngine()
-        self.fx_test_until = 0.0
         self.fx_prev_click = False
         self.fx_t = time.perf_counter()
         self.composed = None
