@@ -1,7 +1,9 @@
-✦ Mới trong 2.4.0
-- Viền tự động khi nền trùng màu con trỏ: con trỏ đỏ đi qua vùng lửa, con trỏ trắng qua vùng tuyết... EzCursor tự thêm viền đen hoặc trắng để con trỏ luôn nổi bật, rời vùng đó thì viền tự tắt. Bật ở tab Hiệu ứng (lưu riêng cho từng game)
-- Giữ chuột trong cửa sổ game: dùng nhiều màn hình không còn lỡ click sang màn hình kia giữa trận. Bật ở tab Ứng dụng, bấm Ctrl+Alt+L để thả / giữ nhanh. Chuột tự được thả khi bạn rời game hoặc mở bảng của Windows
+✦ Mới trong 2.4.1
+- Tab Tùy chọn gọn hơn: cài đặt chia nhóm Trong game / Ứng dụng / Stream; "Giữ chuột trong cửa sổ game" và phím Ctrl+Alt+L nay nằm ở đây
+- Tab Bộ sưu tập mới: mỗi bộ con trỏ một tab, thêm tab ★ Yêu thích để xem và chọn nhanh các con trỏ yêu thích (Ctrl+Alt+R đổi lần lượt giữa chúng)
+- Bỏ nút "Thử ngay trên màn hình" ở tab Hiệu ứng: hiệu ứng hiện ngay khi bạn vào game
 
-✦ New in 2.4.0
-- Auto outline when the background matches the cursor: red cursor over fire, white cursor over snow... EzCursor adds a black or white outline so the cursor always stands out, and removes it when you move on. Turn it on in the Effects tab (saved per game)
-- Lock the mouse to the game window: no more stray clicks on your other monitor mid-fight. Turn it on in the Apps tab and press Ctrl+Alt+L to free / lock it quickly. The mouse is released automatically when you leave the game or open a Windows panel
+✦ New in 2.4.1
+- Tidier Options tab: settings are grouped into In game / App / Stream; "Lock the mouse to the game window" and its Ctrl+Alt+L hotkey now live here
+- New Library layout: one tab per cursor set, plus a ★ Favorites tab to see and pick your favorite cursors quickly (Ctrl+Alt+R cycles through them)
+- Removed the "Try it on screen" button from the Effects tab: effects show as soon as you are in game
