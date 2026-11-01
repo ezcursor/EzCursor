@@ -1,6 +1,7 @@
 """Tiện ích màu và tô màu ảnh."""
 
 import colorsys
+import math
 
 from PIL import Image
 
@@ -36,3 +37,18 @@ def _rgb(c):
 def luminance(c):
     r, g, b = _rgb(c)
     return 0.299 * r + 0.587 * g + 0.114 * b
+
+
+def low_contrast(bg, fg, was_on):
+    """Nền bg (r, g, b) có gần trùng màu con trỏ fg (#rrggbb) không (khoảng cách màu "redmean", gần mắt người).
+    Hai ngưỡng: bật khi < 90, chỉ tắt khi > 130, để rê qua vùng ranh giới con trỏ không nhấp nháy."""
+    r1, g1, b1 = bg
+    r2, g2, b2 = _rgb(fg)
+    rm = (r1 + r2) / 2
+    d = math.sqrt((2 + rm / 256) * (r1 - r2) ** 2 + 4 * (g1 - g2) ** 2 + (2 + (255 - rm) / 256) * (b1 - b2) ** 2)
+    return d < (130 if was_on else 90)
+
+
+def contrast_outline(c):
+    """Màu viền nổi trên cả con trỏ màu c lẫn nền cùng màu: đen cho màu sáng, trắng cho màu tối."""
+    return "#101010" if luminance(c) > 128 else "#FFFFFF"

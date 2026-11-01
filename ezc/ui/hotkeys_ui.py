@@ -15,7 +15,10 @@ from ..theme import ACCENT, AMBER, BG, MUTED, PRESET_COLORS, TEXT, TEXT2
 class HotkeysMixin:
     def update_hotkey_ui(self):
         hk = self.cfg["hotkeys"]
-        for act, caps in getattr(self, "hotkey_caps", {}).items():
+        boxes = dict(getattr(self, "hotkey_caps", {}))
+        if getattr(self, "lock_caps", None) is not None:      # phím giữ / thả chuột nằm ở tab Ứng dụng
+            boxes["lock"] = self.lock_caps
+        for act, caps in boxes.items():
             for w in caps.winfo_children():
                 w.destroy()
             for key in hotkey_parts(hk[act], act):
@@ -34,7 +37,7 @@ class HotkeysMixin:
     def hotkey_conflict(self, act, new):
         """Tên hành động đang dùng tổ hợp phím này (nếu trùng)."""
         names = {"toggle": "Bật / tắt", "shape": "Đổi hình dạng", "color": "Đổi màu", "quit": "Thoát",
-                 "find": "Tìm con trỏ"}
+                 "find": "Tìm con trỏ", "lock": "Giữ / thả chuột"}
         combos = {}
         for a, b in self.cfg["hotkeys"].items():
             b = new if a == act else b
@@ -132,7 +135,7 @@ class HotkeysMixin:
         down = mods_down()
         if down & {"ctrl", "alt"}:
             hk = self.cfg["hotkeys"]
-            for act in ("toggle", "shape", "quit", "find"):
+            for act in ("toggle", "shape", "quit", "find", "lock"):
                 if set(hk[act]["mods"]) == down and key_down(hk[act]["vk"]):
                     now.add(act)
             if set(hk["color"]["mods"]) == down:
@@ -152,6 +155,8 @@ class HotkeysMixin:
                 self.toggle()
             elif act == "find":
                 self.start_find()
+            elif act == "lock":
+                self.toggle_lock()
             elif act == "quit":
                 self.quit()
                 return False

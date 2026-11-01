@@ -122,6 +122,8 @@ class App(
         self.variants = {}          # None / "left" / "right" -> (ảnh, điểm click, màu quầng)
         self.frame_sets = None      # các bộ khung hình động theo trạng thái giữ chuột
         self.hold_state = None
+        self.contrast_on = False    # nền đang trùng màu con trỏ: dùng biến thể viền tương phản
+        self.t_contrast = 0.0
         self.shown_img = None       # ảnh con trỏ đang hiển thị (không tính hiệu ứng tìm con trỏ)
         self.find_t0 = None         # thời điểm bắt đầu hiệu ứng tìm con trỏ
         self.find_ring_only = False
@@ -142,6 +144,7 @@ class App(
         self.pv_next = 0.0
         self._cf_job = None
         self.shell_open = False
+        self.lock_rect = None       # vùng cửa sổ game EzCursor đang giữ chuột trong đó
 
         self.F = Fonts(self.ov)
         self.ov.report_callback_exception = self.on_tk_error

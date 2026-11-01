@@ -98,6 +98,13 @@ class EffectsMixin:
                 side="right")
             self.hold_vars[side], self.hold_btns[side] = var, btn
 
+        row = ctk.CTkFrame(opt, fg_color="transparent")
+        row.pack(fill="x", padx=16, pady=(0, 12))
+        ctk.CTkLabel(row, text=T("Viền tự động khi nền trùng màu con trỏ"), font=self.F.b(13),
+                     text_color=TEXT).pack(side="left")
+        self.contrast_var = tk.BooleanVar(value=self.cfg["auto_contrast"])
+        self.switch(row, self.contrast_var, self.set_auto_contrast).pack(side="right")
+
         inv = {v: k for k, v in self.fx_color_map.items()}
         self.fx_color_seg.set(inv.get(self.cfg["fx_color"], T("Theo màu con trỏ")))
         inv = {v: k for k, v in self.fx_dens_map.items()}
@@ -112,6 +119,10 @@ class EffectsMixin:
         ctk.CTkLabel(test, text=T("   Di chuột và click trong 8 giây để xem hiệu ứng."), font=self.F.b(12),
                      text_color=TEXT2).pack(side="left")
         return page
+
+    def set_auto_contrast(self):
+        self.cfg["auto_contrast"] = bool(self.contrast_var.get())
+        self.refresh()
 
     def set_hold_opt(self, side):
         self.cfg[f"hold_{side}"] = bool(self.hold_vars[side].get())

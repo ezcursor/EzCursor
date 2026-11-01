@@ -46,6 +46,7 @@ DEFAULT_CFG = {
     "hold_left_color": "#22D3EE",
     "hold_right": False,
     "hold_right_color": "#FFD60A",
+    "auto_contrast": False,                             # nền trùng màu con trỏ -> tự thêm viền đen / trắng
     "ombre": False,                                     # dải màu ombre thay cho một màu
     "ombre_colors": ["#FF2E93", "#FF8A3D", "#FFD60A"],
     "ombre_anim": False,                                # dải màu chạy chầm chậm
@@ -67,6 +68,7 @@ DEFAULT_CFG = {
     "cursor_mode": "overlay",  # "overlay" (lớp phủ, nhiều hiệu ứng) / "system" (con trỏ thật, không độ trễ)
     "predict": True,           # đoán trước vị trí con trỏ theo tốc độ chuột (bù ~nửa khung hình)
     "keep_taskbar": True,      # rê chuột xuống taskbar vẫn dùng con trỏ EzCursor
+    "lock_cursor": False,      # giữ chuột trong cửa sổ game (không lỡ click sang màn hình khác)
     "stream": False,           # chế độ stream: trang cục bộ cho nguồn Browser của OBS
     "stream_port": 47391,      # cổng của trang đó (bận thì dùng cổng kế tiếp và lưu lại)
     "setup_done": False,      # đã qua màn hình thiết lập lần đầu
@@ -77,6 +79,7 @@ DEFAULT_CFG = {
         "shape": {"mods": ["ctrl", "alt"], "vk": 0x52},    # R
         "quit": {"mods": ["ctrl", "alt"], "vk": 0x51},     # Q
         "find": {"mods": ["ctrl", "alt"], "vk": 0x46},     # F
+        "lock": {"mods": ["ctrl", "alt"], "vk": 0x4C},     # L
         "color": {"mods": ["ctrl", "alt"]},                # + phím số 1..5
     },
 }
@@ -129,7 +132,7 @@ def default_cfg():
 STYLE_KEYS = ("color", "shape", "size", "image", "hotspot", "tint_image", "glow", "cursor_sparkle",
               "fx_trail", "fx_click", "fx_color", "fx_density",
               "bibata_cursor", "bibata_theme", "bibata_style", "bibata_hand", "own_theme",
-              "hold_left", "hold_left_color", "hold_right", "hold_right_color",
+              "hold_left", "hold_left_color", "hold_right", "hold_right_color", "auto_contrast",
               "ombre", "ombre_colors", "ombre_anim", "ombre_speed")
 
 
@@ -162,7 +165,8 @@ def clean_style(cfg):
     for k in ("color", "hold_left_color", "hold_right_color"):
         if not isinstance(cfg[k], str) or len(cfg[k]) != 7 or not cfg[k].startswith("#"):
             cfg[k] = DEFAULT_CFG[k]
-    for k in ("tint_image", "glow", "cursor_sparkle", "hold_left", "hold_right", "ombre", "ombre_anim"):
+    for k in ("tint_image", "glow", "cursor_sparkle", "hold_left", "hold_right", "ombre", "ombre_anim",
+              "auto_contrast"):
         cfg[k] = bool(cfg[k])
     oc = cfg["ombre_colors"]
     oc = [x for x in oc if isinstance(x, str) and len(x) == 7 and x.startswith("#")] if isinstance(oc, list) else []
@@ -306,6 +310,7 @@ def load_cfg():
     sk = cfg.get("sys_skip") if isinstance(cfg.get("sys_skip"), list) else []
     cfg["sys_skip"] = [x for x in sk if isinstance(x, str)][:50]
     cfg["keep_taskbar"] = bool(cfg.get("keep_taskbar", True))
+    cfg["lock_cursor"] = cfg.get("lock_cursor") is True
     cfg["predict"] = bool(cfg.get("predict", True))
     cfg["stream"] = cfg.get("stream") is True
     port = cfg.get("stream_port")

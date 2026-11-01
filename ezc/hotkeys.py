@@ -5,7 +5,7 @@ from .system import key_down
 
 
 HOTKEY_MODS = [("ctrl", VK_CONTROL, "Ctrl"), ("alt", VK_MENU, "Alt"), ("shift", VK_SHIFT, "Shift")]
-HOTKEY_ACTIONS = ["toggle", "shape", "color", "quit", "find"]
+HOTKEY_ACTIONS = ["toggle", "shape", "color", "quit", "find", "lock"]
 _VK_NAMES = {0x20: "Space", 0x21: "PgUp", 0x22: "PgDn", 0x23: "End", 0x24: "Home", 0x2D: "Ins", 0x2E: "Del",
              0x13: "Pause", 0xBA: ";", 0xBB: "=", 0xBC: ",", 0xBD: "-", 0xBE: ".", 0xBF: "/", 0xC0: "`",
              0xDB: "[", 0xDC: "\\", 0xDD: "]", 0xDE: "'"}

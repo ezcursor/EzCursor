@@ -36,9 +36,58 @@ except Exception:
     pass
 
 
+user32.ClipCursor.argtypes = [ctypes.c_void_p]
+user32.GetClipCursor.argtypes = [ctypes.POINTER(wintypes.RECT)]
+_clip = [None]          # vùng EzCursor đang giữ chuột (trái, trên, phải, dưới) hoặc None
+
+
+def screen_rect():
+    """Cả màn hình ảo (mọi màn hình gộp lại): vùng của chuột khi không bị giữ."""
+    m = user32.GetSystemMetrics
+    x, y = m(76), m(77)                     # SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN
+    return x, y, x + m(78), y + m(79)       # SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN
+
+
+def current_clip():
+    """Vùng chuột đang bị giữ (bằng screen_rect() khi không bị giữ)."""
+    rc = wintypes.RECT()
+    if not user32.GetClipCursor(ctypes.byref(rc)):
+        return screen_rect()
+    return rc.left, rc.top, rc.right, rc.bottom
+
+
+def clip_cursor(rect):
+    """Giữ chuột trong rect (trái, trên, phải, dưới); None = trả chuột tự do."""
+    user32.ClipCursor(ctypes.byref(wintypes.RECT(*rect)) if rect else None)
+    _clip[0] = rect
+
+
+def game_client_rect():
+    """Vùng nội dung của cửa sổ đang ở trên cùng, theo tọa độ màn hình (trái, trên, phải, dưới) hoặc None."""
+    h = user32.GetForegroundWindow()
+    rc = wintypes.RECT()
+    if not h or not user32.GetClientRect(h, ctypes.byref(rc)) or rc.right <= 0 or rc.bottom <= 0:
+        return None
+    org = wintypes.POINT(0, 0)
+    user32.ClientToScreen(h, ctypes.byref(org))
+    return org.x, org.y, org.x + rc.right, org.y + rc.bottom
+
+
+def release_clip():
+    """Trả chuột tự do nếu EzCursor đang giữ (game tự giữ chuột thì không đụng vào)."""
+    if _clip[0] is not None:
+        if current_clip() == _clip[0]:
+            clip_cursor(None)
+        _clip[0] = None
+
+
 def cleanup():
     try:
         ctypes.windll.winmm.timeEndPeriod(1)
+    except Exception:
+        pass
+    try:
+        release_clip()
     except Exception:
         pass
     try:

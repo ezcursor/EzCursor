@@ -8,7 +8,7 @@ import threading
 import time
 from ctypes import wintypes
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageOps, ImageStat
 
 from .base import log
 from .winapi import (
@@ -61,6 +61,44 @@ gdi32.DeleteObject.argtypes = [wintypes.HANDLE]
 gdi32.DeleteDC.argtypes = [wintypes.HDC]
 kernel32.GetModuleHandleW.restype = wintypes.HMODULE
 kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
+
+
+gdi32.CreateCompatibleBitmap.restype = wintypes.HANDLE
+gdi32.CreateCompatibleBitmap.argtypes = [wintypes.HDC, ctypes.c_int, ctypes.c_int]
+gdi32.BitBlt.argtypes = [wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                         wintypes.HDC, ctypes.c_int, ctypes.c_int, wintypes.DWORD]
+gdi32.GetDIBits.argtypes = [wintypes.HDC, wintypes.HANDLE, wintypes.UINT, wintypes.UINT, ctypes.c_void_p,
+                            ctypes.c_void_p, wintypes.UINT]
+
+
+def grab_screen(x, y, w, h):
+    """Ảnh RGB vùng màn hình (tọa độ màn hình ảo). Windows 10/11 chụp cả lớp phủ con trỏ (đã thử 01/11)."""
+    screen = user32.GetDC(None)
+    mem = gdi32.CreateCompatibleDC(screen)
+    bmp = gdi32.CreateCompatibleBitmap(screen, w, h)
+    old = gdi32.SelectObject(mem, bmp)
+    try:
+        gdi32.BitBlt(mem, 0, 0, w, h, screen, x, y, 0x00CC0020)       # SRCCOPY
+        bmi = BITMAPINFOHEADER(ctypes.sizeof(BITMAPINFOHEADER), w, -h, 1, 32, 0, 0, 0, 0, 0, 0)
+        buf = ctypes.create_string_buffer(w * h * 4)
+        gdi32.GetDIBits(mem, bmp, 0, h, buf, ctypes.byref(bmi), 0)
+    finally:
+        gdi32.SelectObject(mem, old)
+        gdi32.DeleteObject(bmp)
+        gdi32.DeleteDC(mem)
+        user32.ReleaseDC(None, screen)
+    return Image.frombuffer("RGBA", (w, h), buf.raw, "raw", "BGRA", 0, 1).convert("RGB")
+
+
+def background_color(shot, cur, m):
+    """Màu nền trung bình (r, g, b) trong ảnh chụp shot quanh con trỏ cur (đặt cách mép m px).
+    Bỏ chỗ con trỏ che (nới thêm 3 px phòng con trỏ vừa dời); còn dưới 10% nền thì None."""
+    mask = Image.new("L", shot.size, 0)
+    mask.paste(cur.getchannel("A").point(lambda v: 255 if v > 8 else 0), (m, m))
+    bg = ImageOps.invert(mask.filter(ImageFilter.MaxFilter(7)))
+    if bg.histogram()[255] < shot.width * shot.height // 10:
+        return None
+    return tuple(round(v) for v in ImageStat.Stat(shot, mask=bg).mean)
 
 
 @WNDPROC
@@ -219,6 +257,11 @@ class CursorFollower:
         if on != self.on:
             self.on = on
             self._wake()
+
+    def drawn_origin(self):
+        """Góc trên trái của cửa sổ con trỏ lần dời gần nhất, hoặc None."""
+        k = self._last
+        return None if k is None else (int(k[0] - k[2][0]), int(k[1] - k[2][1]))
 
     def kick(self, wait=True):
         """Dời cửa sổ con trỏ tới chuột ngay (vd vừa đổi ảnh); wait: chờ tối đa ~10 ms cho xong."""

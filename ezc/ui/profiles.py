@@ -79,6 +79,7 @@ class ProfilesMixin:
                 self.hand_seg.set({v: k for k, v in self.hand_map.items()}.get(c["bibata_hand"]))
             self.fx_color_seg.set({v: k for k, v in self.fx_color_map.items()}.get(c["fx_color"]))
             self.fx_dens_seg.set({v: k for k, v in self.fx_dens_map.items()}.get(c["fx_density"]))
+            self.contrast_var.set(c["auto_contrast"])
             for side in ("left", "right"):
                 self.hold_vars[side].set(c[f"hold_{side}"])
                 col = c[f"hold_{side}_color"]

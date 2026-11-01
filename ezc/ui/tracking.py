@@ -9,7 +9,7 @@ from ctypes import wintypes
 from ..base import APP_NAME, QUIT_FLAG, SHOW_FLAG, log
 from ..winapi import show_real_cursor, user32
 from ..syscursor import REAL_CURSOR_MODE
-from ..system import foreground_exe, mouse_buttons
+from ..system import clip_cursor, current_clip, foreground_exe, game_client_rect, mouse_buttons, screen_rect
 from ..i18n import T
 from ..colors import mix
 from ..display import fullscreen_exclusive
@@ -87,6 +87,41 @@ class TrackingMixin:
         if not self.system_mode():
             self.ovl.show(on)
         self.update_status()
+
+    def update_lock(self):
+        """Giữ chuột trong cửa sổ game (tùy chọn): người dùng nhiều màn hình không lỡ click ra ngoài game.
+        Chỉ với game trong danh sách (kể cả khi bật "mọi ứng dụng"); game tự giữ chuột thì để game lo."""
+        want = None
+        if self.active and self.cfg["lock_cursor"] and self.fg_exe.lower() in self.app_set:
+            want = game_client_rect()
+        cur = current_clip()
+        if want:
+            if cur not in (screen_rect(), self.lock_rect, want):      # game đang tự giữ chuột
+                self.lock_rect = None
+                return
+            if self.lock_rect is None:          # chỉ bắt đầu giữ khi chuột đã vào game và không kéo thả gì
+                pt = wintypes.POINT()
+                user32.GetCursorPos(ctypes.byref(pt))
+                if not (want[0] <= pt.x < want[2] and want[1] <= pt.y < want[3]) or any(mouse_buttons()):
+                    return
+            if cur != want:                     # mới giữ, cửa sổ đổi chỗ, hoặc Windows vừa tự bỏ giữ chuột
+                clip_cursor(want)
+            self.lock_rect = want
+        elif self.lock_rect is not None:
+            if cur == self.lock_rect:
+                clip_cursor(None)
+            self.lock_rect = None
+
+    def toggle_lock(self):
+        self.cfg["lock_cursor"] = not self.cfg["lock_cursor"]
+        self.save()
+        if getattr(self, "lock_var", None) is not None:
+            self.lock_var.set(self.cfg["lock_cursor"])
+        try:
+            self.icon.notify(T("Đang giữ chuột trong cửa sổ game.") if self.cfg["lock_cursor"]
+                             else T("Đã thả chuột ra khỏi cửa sổ game."), APP_NAME)
+        except Exception:
+            pass
 
     # Điểm click của ảnh con trỏ nằm ở luồng bám chuột: đổi ở đây là luồng đó dùng ngay
     @property
@@ -230,8 +265,15 @@ class TrackingMixin:
                 self.use_style(self.style_of(self.edit_profile))
             if was_shell != self.shell_open:
                 self.update_status()
+            self.update_lock()
         if self.active and self.cfg["find_shake"]:
             self.check_shake(now)
+        if self.active and self.cfg["auto_contrast"] and not self.system_mode():
+            if now - self.t_contrast >= 0.2:         # màu nền sau con trỏ: 5 lần/giây
+                self.t_contrast = now
+                self.check_contrast()
+        elif self.contrast_on:
+            self.set_contrast(False)
         if self.active:
             l, r = mouse_buttons()
             c = self.cfg

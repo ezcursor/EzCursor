@@ -8,13 +8,13 @@ import time
 from PIL import Image, ImageTk
 
 from ..config import OMBRE_SPEEDS, STYLE_KEYS
-from ..colors import luminance, tint_image
+from ..colors import contrast_outline, low_contrast, luminance, tint_image
 from ..ombre import OMBRE_FRAMES, apply_ombre, ombre_lut, ombre_tmap
 from ..theme import ACCENT
 from ..bibata import (
     BIBATA_DIR, BIBATA_META, OWN_BY_ID, bibata_colors, bibata_image, own_image, own_image_colored)
 from ..shapes import render_shape
-from ..overlay import add_glow, add_outline, outline_width, pad_image
+from ..overlay import add_glow, add_outline, background_color, grab_screen, outline_width, pad_image
 
 
 class RenderMixin:
@@ -61,7 +61,7 @@ class RenderMixin:
             anim = c["ombre_anim"] and not self.animated_image()
             im = apply_ombre(im, ombre_tmap(im, hot), ombre_lut(oc, phase, anim))
             glow_col = oc[0]
-        if c["hold_left"] or c["hold_right"]:      # mọi biến thể cùng kích thước để điểm click không lệch
+        if c["hold_left"] or c["hold_right"] or c["auto_contrast"]:   # mọi biến thể cùng kích thước, click không lệch
             w = outline_width(s)
             im, hot = add_outline(im, hot, outline, w) if outline else pad_image(im, hot, w + 2)
         if c["glow"]:
@@ -81,13 +81,22 @@ class RenderMixin:
         return self.cfg["bibata_style"] + ("-right" if self.cfg["bibata_hand"] == "left" else "")
 
     def hold_colors(self):
+        """Các biến thể có viền: khi giữ chuột trái / phải và khi nền trùng màu ("contrast")."""
         c = self.cfg
         out = {None: None}
         if c["hold_left"]:
             out["left"] = c["hold_left_color"]
         if c["hold_right"]:
             out["right"] = c["hold_right_color"]
+        if c["auto_contrast"]:
+            out["contrast"] = contrast_outline(self.glow_color())
         return out
+
+    def look_key(self):
+        """Biến thể đang dùng: viền giữ chuột được ưu tiên, rồi tới viền tương phản."""
+        if self.hold_state is not None and self.hold_state in self.variants:
+            return self.hold_state
+        return "contrast" if self.contrast_on and "contrast" in self.variants else None
 
     def render_key(self):
         c = self.cfg
@@ -123,7 +132,7 @@ class RenderMixin:
         self.frame_sets = None
         self.cursor_durations = None
         self.preview_photos = None
-        self.show_img(self.variants.get(self.hold_state, self.composed)[0])
+        self.show_img(self.variants.get(self.look_key(), self.composed)[0])
         if getattr(self, "_cf_job", None):
             self.ov.after_cancel(self._cf_job)
             self._cf_job = None
@@ -133,7 +142,7 @@ class RenderMixin:
             self.cursor_durations = hit["durations"]
             self.preview_photos = hit["photos"]
             self.ov_hot = hit["ov_hot"]
-            self.cursor_frames = self.frame_sets.get(self.hold_state) or self.frame_sets[None]
+            self.cursor_frames = self.frame_sets.get(self.look_key()) or self.frame_sets[None]
             self.cf_idx, self.cf_next, self.pv_idx, self.pv_next = 0, 0.0, 0, 0.0
             self.show_img(self.cursor_frames[0])
             if self.active:
@@ -207,7 +216,7 @@ class RenderMixin:
         if not frames or len({f.size for fs in sets.values() for f in fs}) != 1:
             return
         self.frame_sets = sets
-        self.cursor_frames, self.cursor_durations = sets.get(self.hold_state, frames), durs
+        self.cursor_frames, self.cursor_durations = sets.get(self.look_key(), frames), durs
         self.cf_idx, self.cf_next = 0, 0.0
         self.show_img(self.cursor_frames[0])
         if self.active:
@@ -243,7 +252,7 @@ class RenderMixin:
                 sets[key] = ims
         hot = self.composed[1]
         self.frame_sets = sets
-        self.cursor_frames = sets.get(self.hold_state, sets[None])
+        self.cursor_frames = sets.get(self.look_key(), sets[None])
         ms = OMBRE_SPEEDS[self.cfg["ombre_speed"]] if moving else 96
         self.cursor_durations = [ms] * len(self.cursor_frames)
         self.cf_idx, self.cf_next = 0, 0.0
@@ -296,10 +305,30 @@ class RenderMixin:
         if state == self.hold_state:
             return
         self.hold_state = state
-        key = state if state in self.variants else None
         if self.active and self.system_mode():
             self.apply_system_cursor()
             return
+        self.show_look()
+
+    def set_contrast(self, on):
+        if on != self.contrast_on:
+            self.contrast_on = on
+            self.show_look()
+
+    def check_contrast(self):
+        """Đọc màu nền ngay sau con trỏ (bỏ chỗ con trỏ che) và bật / tắt viền tương phản."""
+        org = self.follow.drawn_origin()
+        im = getattr(self, "shown_img", None)
+        if org is None or im is None or self.find_t0 is not None:
+            return
+        m = max(12, im.width // 4)
+        bg = background_color(grab_screen(org[0] - m, org[1] - m, im.width + 2 * m, im.height + 2 * m), im, m)
+        if bg is not None:
+            self.set_contrast(low_contrast(bg, self.glow_color(), self.contrast_on))
+
+    def show_look(self):
+        """Hiện biến thể theo look_key() (ảnh đã vẽ sẵn nên rất nhẹ)."""
+        key = self.look_key()
         if self.frame_sets:
             self.cursor_frames = self.frame_sets.get(key) or self.frame_sets[None]
             self.show_img(self.cursor_frames[self.cf_idx % len(self.cursor_frames)])

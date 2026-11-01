@@ -196,6 +196,11 @@ TR_EN = {
     "Chưa có con trỏ nào. Bấm \"+ Thêm con trỏ\" để thêm ảnh PNG, GIF hoặc file con trỏ .cur, .ani.":
         "No cursors yet. Click \"+ Add cursor\" to add a PNG, GIF or .cur / .ani cursor file.",
     "Tìm con trỏ": "Find cursor", "Lắc chuột để tìm": "Shake to find",
+    "Giữ / thả chuột": "Lock / free mouse", "Giữ / thả:": "Lock / free:",
+    "  Giữ chuột trong cửa sổ game (không lỡ click sang màn hình khác)":
+        "  Lock the mouse to the game window (no stray clicks on other monitors)",
+    "Đang giữ chuột trong cửa sổ game.": "Mouse is locked to the game window.",
+    "Đã thả chuột ra khỏi cửa sổ game.": "Mouse released from the game window.",
     # 1.8.0
     "Bộ EzCursor": "EzCursor set", "Màu gốc": "Original",
     "Tâm ngắm Neon": "Neon Crosshair",
@@ -212,6 +217,7 @@ TR_EN = {
     "Mũi tên Neon": "Neon Arrow",
     # 1.7.0
     "Viền khi giữ chuột": "Outline while holding", "Trái": "Left", "Phải": "Right",
+    "Viền tự động khi nền trùng màu con trỏ": "Auto outline when the background matches the cursor",
     "Chọn màu viền": "Choose outline color", "Mở thư mục log": "Open log folder",
     "EzCursor gặp lỗi liên tục nên đã tạm tắt con trỏ để bạn dùng chuột bình thường. "
     "Hãy mở lại EzCursor; chi tiết lỗi nằm trong file ezcursor.log.":

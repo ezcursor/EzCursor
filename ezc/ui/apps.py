@@ -36,6 +36,17 @@ class AppsMixin:
         ctk.CTkButton(bottom, text=T("ÁP DỤNG"), command=self.apply_apps, height=44, width=150, corner_radius=10,
                       fg_color=ACCENT, hover_color=mix(ACCENT, "#FFFFFF", 0.15), text_color="#FFFFFF",
                       font=self.F.h(15)).pack(side="right")
+        # Giữ chuột trong cửa sổ game + phím tắt giữ / thả nhanh (bấm vào phím để đổi)
+        lock = ctk.CTkFrame(page, fg_color="transparent")
+        lock.pack(fill="x", pady=(10, 0))
+        self.lock_var = tk.BooleanVar(value=self.cfg["lock_cursor"])
+        self.switch(lock, self.lock_var, self.set_lock_cursor).pack(side="left")
+        ctk.CTkLabel(lock, text=T("  Giữ chuột trong cửa sổ game (không lỡ click sang màn hình khác)"),
+                     font=self.F.b(13), text_color=TEXT).pack(side="left")
+        self.lock_caps = ctk.CTkFrame(lock, fg_color="transparent", cursor="hand2")
+        self.lock_caps.pack(side="right")
+        self.lock_caps.bind("<Button-1>", lambda e: self.capture_hotkey("lock"))
+        ctk.CTkLabel(lock, text=T("Giữ / thả:"), font=self.F.b(12), text_color=MUTED).pack(side="right", padx=(0, 4))
         self.applied_label = ctk.CTkLabel(page, text="", font=self.F.b(12), text_color=TEXT2, anchor="w",
                                           justify="left", wraplength=680)
         self.applied_label.pack(fill="x", pady=(10, 0))
@@ -136,6 +147,10 @@ class AppsMixin:
         if just_applied:
             txt = T("✓ Đã áp dụng.  ") + txt
         self.applied_label.configure(text=txt, text_color=CYAN_TEXT if just_applied else TEXT2)
+
+    def set_lock_cursor(self):
+        self.cfg["lock_cursor"] = bool(self.lock_var.get())
+        self.save()
 
     def set_all_apps(self):
         self.cfg["all_apps"] = bool(self.all_var.get())

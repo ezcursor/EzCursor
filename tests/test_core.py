@@ -204,3 +204,24 @@ def test_window_band_safe():
     import ezc.overlay as ov
     assert ov.window_band(0) == 0
     assert isinstance(ov.window_band(123), int)
+
+
+def test_background_color_ignores_cursor():
+    """Ảnh chụp màn hình dính cả lớp phủ: chỉ lấy màu nền ở chỗ con trỏ không che."""
+    cur = Image.new("RGBA", (40, 40), (0, 0, 0, 0))
+    ImageDraw.Draw(cur).rectangle((5, 5, 34, 34), fill=(255, 0, 0, 255))
+    shot = Image.new("RGB", (80, 80), (20, 60, 200))          # nền xanh, lề 20 px quanh con trỏ
+    shot.paste((255, 0, 0), (25, 25, 55, 55))                  # con trỏ đỏ hiện trong ảnh chụp
+    r, g, b = ez.background_color(shot, cur, 20)
+    assert abs(r - 20) < 3 and abs(g - 60) < 3 and abs(b - 200) < 3
+    full = Image.new("RGBA", (40, 40), (255, 0, 0, 255))      # con trỏ che gần hết: không đoán
+    assert ez.background_color(Image.new("RGB", (44, 44)), full, 2) is None
+
+
+def test_low_contrast_hysteresis():
+    red = "#FF2828"
+    assert ez.low_contrast((250, 45, 40), red, False)           # nền đỏ gần như trùng
+    assert not ez.low_contrast((30, 30, 30), red, False)        # nền tối: đủ tương phản
+    mid = (200, 70, 60)                                          # vùng giữa: giữ trạng thái cũ, không nhấp nháy
+    assert ez.low_contrast(mid, red, True) and not ez.low_contrast(mid, red, False)
+    assert ez.contrast_outline("#FFD60A") == "#101010" and ez.contrast_outline("#1E3A8A") == "#FFFFFF"

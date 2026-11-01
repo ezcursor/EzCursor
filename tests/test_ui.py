@@ -253,6 +253,97 @@ def test_options_tab_fits_window(app):
             assert need <= have, f"{lang} stream={on}: cần {need} px, chỉ có {have} px"
 
 
+def test_cursor_lock(app):
+    """Giữ chuột trong cửa sổ game: chỉ khi bật, chỉ game trong danh sách, nhả khi rời game, không giành với game."""
+    full, game = (0, 0, 3840, 1080), (0, 0, 1920, 1080)
+    clip = {"cur": None}
+    ez.screen_rect = lambda: full
+
+    def get_clip(p):
+        p._obj.left, p._obj.top, p._obj.right, p._obj.bottom = clip["cur"] or full
+        return 1
+
+    def set_clip(p):
+        clip["cur"] = p and (p._obj.left, p._obj.top, p._obj.right, p._obj.bottom)
+        return 1
+
+    ez.user32.GetClipCursor = get_clip                   # Windows giả lập: vùng giữ chuột
+    ez.user32.ClipCursor = set_clip
+    ez.game_client_rect = lambda: game
+    app.hide_to_tray()
+    app.cfg["apps"] = ["Last Epoch.exe"]
+    app.update_app_set()
+    app.state.update(exe="Last Epoch.exe", x=500, y=500)
+    pump(app)
+    assert app.active and clip["cur"] is None            # mặc định tắt
+    app.toggle_lock()                                    # phím tắt / ô trong tab Tùy chọn
+    pump(app)
+    assert app.cfg["lock_cursor"] and clip["cur"] == game
+    clip["cur"] = None                                   # Windows tự bỏ giữ chuột -> giữ lại
+    pump(app)
+    assert clip["cur"] == game
+    app.state["exe"] = "notepad.exe"                     # "mọi ứng dụng" bật nhưng notepad không phải game
+    pump(app)
+    assert app.active and clip["cur"] is None
+    app.state.update(exe="Last Epoch.exe", x=3000)       # chuột đang ở màn hình kia: chờ chuột vào game
+    pump(app)
+    assert clip["cur"] is None
+    app.state["x"] = 800
+    pump(app)
+    assert clip["cur"] == game
+    app.state["exe"] = "notepad.exe"
+    pump(app)
+    clip["cur"] = (100, 100, 900, 700)                   # game tự giữ chuột -> để game lo
+    app.state["exe"] = "Last Epoch.exe"
+    pump(app)
+    assert clip["cur"] == (100, 100, 900, 700)
+    clip["cur"] = None
+    pump(app)
+    assert clip["cur"] == game
+    ez.cleanup()                                         # thoát / lỗi: luôn trả chuột tự do
+    assert clip["cur"] is None
+    pump(app)
+    app.toggle_lock()
+    pump(app)
+    assert not app.cfg["lock_cursor"] and clip["cur"] is None
+
+
+def test_lock_hotkey(app):
+    assert app.cfg["hotkeys"]["lock"] == {"mods": ["ctrl", "alt"], "vk": 0x4C}      # L
+    assert app.hotkey_conflict("lock", {"mods": ["ctrl", "alt"], "vk": 0x48}) == "Bật / tắt"
+    assert app.hotkey_conflict("toggle", {"mods": ["ctrl", "alt"], "vk": 0x4C}) == "Giữ / thả chuột"
+
+
+def test_auto_contrast(app):
+    """Nền gần trùng màu con trỏ -> dùng con trỏ có viền tương phản; giữ chuột vẫn ưu tiên viền giữ chuột."""
+    bg = {"rgb": (20, 20, 20)}
+    ez.grab_screen = lambda x, y, w, h: ez.Image.new("RGB", (w, h), bg["rgb"])
+    app.hide_to_tray()
+    app.state.update(exe="Last Epoch.exe", x=500, y=500)
+    pump(app)
+    assert app.active and "contrast" not in app.variants           # mặc định tắt
+    app.cfg["auto_contrast"] = True
+    app.cfg["hold_left"] = True
+    app.rebuild_overlay()
+    pump(app)
+    assert set(app.variants) == {None, "left", "contrast"}
+    assert app.shown_img is app.variants[None][0] or not app.contrast_on
+    bg["rgb"] = ez._rgb(app.glow_color())                    # nền trùng màu con trỏ
+    pump(app, 25)
+    assert app.contrast_on and app.look_key() == "contrast"
+    app.set_hold("left")
+    assert app.look_key() == "left"
+    app.set_hold(None)
+    assert app.look_key() == "contrast"
+    bg["rgb"] = (20, 20, 20) if ez.luminance(app.glow_color()) > 128 else (240, 240, 240)
+    pump(app, 25)
+    assert not app.contrast_on and app.look_key() is None
+    app.state["exe"] = "explorer.exe"                              # rời game: không đọc màn hình nữa
+    app.cfg["all_apps"] = False
+    pump(app)
+    assert not app.active and not app.contrast_on
+
+
 def test_follow_runs_while_ui_busy(app):
     """Luồng giao diện bận (dựng ảnh, đổi tab...) không cập nhật Tk thì con trỏ vẫn bám chuột (luồng riêng)."""
     app.hide_to_tray()
