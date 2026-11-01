@@ -152,6 +152,32 @@ def refresh_hz():
         return 60
 
 
+class DWM_TIMING_INFO(ctypes.Structure):
+    """Phần đầu DWM_TIMING_INFO (dwmapi.h, pack 1, 292 byte). Từ Windows 8.1 các bộ đếm khung không còn đúng,
+    chỉ thời điểm ghép hình (qpcCompose) và chu kỳ quét (qpcRefreshPeriod) dùng được."""
+    _pack_ = 1
+    _fields_ = [("cbSize", ctypes.c_uint32), ("rateRefresh", ctypes.c_uint32 * 2),
+                ("qpcRefreshPeriod", ctypes.c_uint64), ("rateCompose", ctypes.c_uint32 * 2),
+                ("qpcVBlank", ctypes.c_uint64), ("cRefresh", ctypes.c_uint64), ("cDXRefresh", ctypes.c_uint32),
+                ("qpcCompose", ctypes.c_uint64), ("rest", ctypes.c_ubyte * 236)]
+
+
+dwmapi = ctypes.windll.dwmapi
+dwmapi.DwmGetCompositionTimingInfo.argtypes = [wintypes.HWND, ctypes.POINTER(DWM_TIMING_INFO)]
+
+
+def dwm_compose_time():
+    """(thời điểm DWM ghép hình gần nhất, chu kỳ quét) theo đơn vị QPC, hoặc None nếu không đọc được."""
+    t = DWM_TIMING_INFO()
+    t.cbSize = ctypes.sizeof(t)
+    try:
+        if dwmapi.DwmGetCompositionTimingInfo(None, ctypes.byref(t)) != 0 or not t.qpcRefreshPeriod:
+            return None
+    except Exception:
+        return None
+    return t.qpcCompose, t.qpcRefreshPeriod
+
+
 class CursorFollower:
     """Luồng riêng bám chuột (~1 ms/lần): luồng này tạo và sở hữu cửa sổ con trỏ (self.ovl) nên dời cửa sổ
     không phải chờ luồng giao diện – giao diện bận dựng ảnh, đổi tab... con trỏ vẫn bám đều.
@@ -174,6 +200,9 @@ class CursorFollower:
         self._prev_v = (0.0, 0.0)
         self._hz = refresh_hz()
         self._perf = {"t0": None, "n": 0, "gap": 0.0, "last": None, "done": False}
+        # DWM ghép hình khi chuột đang di chuyển: lần ghép trước, khoảng cách lâu nhất (chu kỳ quét), số khung lỡ
+        self._dwm = {"last": None, "worst": 0.0, "frames": 0, "missed": 0}
+        self._move_t = 0.0
         self._err = False
         # Python mặc định chỉ đổi luồng sau 5 ms: giảm xuống 1 ms để luồng bám chuột không phải chờ lâu
         # (cần cả timeBeginPeriod(1) ở system.py, nếu không Windows làm tròn lần chờ GIL lên ~16 ms)
@@ -258,6 +287,7 @@ class CursorFollower:
         key = (x, y, hot)
         if key != self._last or gen != self._moved_gen:
             self._last = key
+            self._move_t = now
             self.ovl.move(int(x - hot[0]), int(y - hot[1]))
         if gen != self._moved_gen:
             self._moved_gen = gen
@@ -293,15 +323,42 @@ class CursorFollower:
             return
         if pf["last"] is None:          # vừa quay lại game sau khi tạm tắt
             pf["last"] = now
+            self._dwm["last"] = None
             return
         pf["n"] += 1
         pf["gap"] = max(pf["gap"], now - pf["last"])
         pf["last"] = now
+        self._record_dwm(now)
         if now - pf["t0"] >= 20:
             pf["done"] = True
+            d = self._dwm
+            dwm = (f"DWM ghép hình chậm nhất {d['worst'] * 1000 / self._hz:.0f} ms, "
+                   f"lỡ {d['missed']}/{d['frames'] + d['missed']} khung" if d["frames"] else "DWM: không đo được")
             log.info("Độ trễ lớp phủ (luồng riêng): bám chuột mỗi %.1f ms, chậm nhất %.0f ms, đoán trước: %s, "
-                     "màn hình %d Hz", (now - pf["t0"]) * 1000 / max(1, pf["n"]), pf["gap"] * 1000,
-                     "bật" if self.predict else "tắt", self._hz)
+                     "màn hình %d Hz, %s", (now - pf["t0"]) * 1000 / max(1, pf["n"]), pf["gap"] * 1000,
+                     "bật" if self.predict else "tắt", self._hz, dwm)
+
+    def _record_dwm(self, now):
+        """Lúc chuột đang di chuyển, DWM phải ghép hình mỗi chu kỳ quét: khoảng cách giữa hai lần ghép dài hơn
+        là con trỏ hiện trễ dù luồng này đã dời kịp (vd GPU bận vì hình nền động, game nặng)."""
+        r = dwm_compose_time()
+        if r is None:
+            return
+        qpc, period = r
+        d = self._dwm
+        if d["last"] is None:
+            d["last"] = (qpc, now)
+            return
+        if qpc == d["last"][0]:
+            return
+        prev_qpc, prev_t = d["last"]
+        d["last"] = (qpc, now)
+        if self._move_t < prev_t:        # chuột đứng yên từ lần ghép trước: DWM không cần ghép, không tính
+            return
+        n = (qpc - prev_qpc) / period
+        d["worst"] = max(d["worst"], n)
+        d["frames"] += 1
+        d["missed"] += max(0, round(n) - 1)
 
 
 # Các bảng giao diện của Windows nằm trên lớp "luôn trên cùng" -> tạm hiện con trỏ thật
