@@ -167,3 +167,40 @@ def test_verify_download(tmp_path):
     assert ez.verify_download(f, 1000, "")
     assert not ez.verify_download(f, 2000, good)          # tải thiếu
     assert not ez.verify_download(f, 1000, "0" * 64)       # sai mã kiểm tra
+
+
+def test_shell_ui_quick_settings(monkeypatch):
+    """Bảng Quick Settings (bấm biểu tượng pin/Wi-Fi) của Windows 11 do ShellHost.exe vẽ, nằm trên lớp phủ."""
+    import ezc.overlay as ov
+    monkeypatch.setattr(ov.user32, "GetForegroundWindow", lambda: 5)
+    monkeypatch.setattr(ov.user32, "WindowFromPoint", lambda pt: 0)
+    monkeypatch.setattr(ov, "pid_of", lambda h: 42)
+    monkeypatch.setattr(ov, "class_name", lambda h: "Windows.UI.Core.CoreWindow")
+    monkeypatch.setattr(ov, "exe_name", lambda pid: "ShellHost.exe")
+    assert ov.shell_ui_open()
+    monkeypatch.setattr(ov, "exe_name", lambda pid: "notepad.exe")
+    assert not ov.shell_ui_open()
+
+
+def test_shell_ui_high_band(monkeypatch):
+    """Bảng Windows ở band cao hơn lớp phủ (Win+V, Win+Tab...) -> con trỏ Windows; band 1 (Widgets) giữ EzCursor."""
+    import ezc.overlay as ov
+    bands = {5: 1, 7: 1}
+    monkeypatch.setattr(ov.user32, "GetForegroundWindow", lambda: 5)
+    monkeypatch.setattr(ov.user32, "WindowFromPoint", lambda pt: 7)
+    monkeypatch.setattr(ov.user32, "GetAncestor", lambda h, f: h)
+    monkeypatch.setattr(ov, "pid_of", lambda h: h)
+    monkeypatch.setattr(ov, "exe_name", lambda pid: "WidgetBoard.exe")
+    monkeypatch.setattr(ov, "class_name", lambda h: "WindowsDashboard")
+    monkeypatch.setattr(ov, "window_band", lambda h: bands[h])
+    assert not ov.shell_ui_open()
+    bands[7] = 3                                   # Shell_LightDismissOverlay của Win+V / emoji dưới chuột
+    assert ov.shell_ui_open() and "band 3" in ov.shell_reason[0]
+    bands[7], bands[5] = 1, 5                      # cửa sổ đang mở ở band 5 (Win+Tab)
+    assert ov.shell_ui_open() and "band 5" in ov.shell_reason[0]
+
+
+def test_window_band_safe():
+    import ezc.overlay as ov
+    assert ov.window_band(0) == 0
+    assert isinstance(ov.window_band(123), int)

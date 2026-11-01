@@ -363,7 +363,8 @@ class CursorFollower:
 
 # Các bảng giao diện của Windows nằm trên lớp "luôn trên cùng" -> tạm hiện con trỏ thật
 SHELL_UI_EXES = {"startmenuexperiencehost.exe", "searchhost.exe", "searchapp.exe", "searchui.exe",
-                 "shellexperiencehost.exe", "lockapp.exe"}
+                 "shellexperiencehost.exe", "lockapp.exe",
+                 "shellhost.exe"}   # Windows 11 24H2+: Quick Settings (bấm pin / Wi-Fi / âm lượng)
 SHELL_UI_CLASSES = {"XamlExplorerHostIslandWindow", "MultitaskingViewFrame", "TaskSwitcherWnd",
                     "ForegroundStaging", "Windows.UI.Core.CoreWindow"}
 
@@ -385,6 +386,24 @@ def class_name(h):
 TASKBAR_CLASSES = {"Shell_TrayWnd", "Shell_SecondaryTrayWnd"}
 shell_reason = [""]        # cửa sổ khiến EzCursor trả con trỏ Windows (ghi vào nhật ký để dò lỗi)
 
+# Lớp z (band) của cửa sổ: app thường và lớp phủ ở band 1 (ZBID_DESKTOP). Bảng của Windows nằm ở band cao hơn
+# (đo 01/11: Quick Settings/thông báo 4, Win+V/emoji 3, Win+Tab/snap 5, Start/Search 6) -> lớp phủ không thể vượt lên
+_GetWindowBand = getattr(user32, "GetWindowBand", None)     # hàm không công khai, có từ Windows 8
+if _GetWindowBand is not None:
+    _GetWindowBand.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+ZBID_DESKTOP = 1
+
+
+def window_band(h):
+    """Band của cửa sổ h; 0 nếu không đọc được."""
+    if not h or _GetWindowBand is None:
+        return 0
+    band = wintypes.DWORD(0)
+    try:
+        return band.value if _GetWindowBand(h, ctypes.byref(band)) else 0
+    except OSError:
+        return 0
+
 
 def shell_ui_open(keep_taskbar=False):
     """True khi giao diện riêng của Windows (Start, Search, taskbar, xem trước...) đang mở hoặc ở dưới chuột.
@@ -396,6 +415,10 @@ def shell_ui_open(keep_taskbar=False):
         if exe in SHELL_UI_EXES or (exe in ("explorer.exe", "") and cls in SHELL_UI_CLASSES):
             shell_reason[0] = f"cửa sổ đang mở {exe} / {cls}"
             return True
+        band = window_band(h)
+        if band > ZBID_DESKTOP:
+            shell_reason[0] = f"cửa sổ đang mở {exe} / {cls} (band {band})"
+            return True
     # Cửa sổ ngay dưới con trỏ: khung xem trước taskbar, khay hệ thống, thông báo... không lấy focus
     pt = wintypes.POINT()
     user32.GetCursorPos(ctypes.byref(pt))
@@ -403,6 +426,10 @@ def shell_ui_open(keep_taskbar=False):
     if under:
         root = user32.GetAncestor(under, 2) or under          # GA_ROOT
         cls = class_name(root)
+        band = window_band(root)
+        if band > ZBID_DESKTOP:
+            shell_reason[0] = f"dưới chuột {exe_name(pid_of(root)).lower()} / {cls} (band {band})"
+            return True
         # Menu chuột phải và thông báo của Windows nằm trên cả lớp phủ (đã thử 26/10) -> dùng con trỏ thật
         if cls not in SHELL_HOVER_OK and not (keep_taskbar and cls in TASKBAR_CLASSES):
             exe = exe_name(pid_of(root)).lower()
