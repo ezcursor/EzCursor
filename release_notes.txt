@@ -1,7 +1,9 @@
-✦ Mới trong 2.3.0
-- Hiện con trỏ khi livestream bằng OBS: người xem thấy đúng con trỏ EzCursor của bạn (màu ombre, lấp lánh, viền khi giữ chuột, vòng sáng tìm con trỏ). Bật ở tab Tùy chọn → "Hiện con trỏ trên stream (OBS)", bấm "Sao chép link" rồi thêm nguồn Browser trong OBS, đặt trên Game Capture
-- Không đụng vào game: con trỏ trên stream vẽ bằng một trang web nhỏ chạy ngay trên máy bạn, chỉ máy bạn mở được
+✦ Mới trong 2.3.1
+- Sửa lỗi mất con trỏ khi mở các bảng của Windows: bấm biểu tượng pin / Wi-Fi / âm lượng (Quick Settings), Win+V (lịch sử clipboard), Win+. (emoji)... nay hiện con trỏ Windows như bình thường. EzCursor tự nhận ra mọi bảng của Windows nằm trên lớp phủ, kể cả các bảng mới của Windows sau này
+- Gỡ cài đặt không còn tự xóa cài đặt và con trỏ của bạn: bộ gỡ hỏi trước (mặc định giữ lại)
+- Bộ cài có giao diện tiếng Việt / tiếng Anh theo ngôn ngữ Windows
 
-✦ New in 2.3.0
-- Show your cursor on stream with OBS: viewers see your exact EzCursor cursor (ombre colors, sparkle, hold outline, find-cursor ring). Turn on Options → "Show cursor on stream (OBS)", click "Copy link", then add a Browser source in OBS above Game Capture
-- Doesn't touch the game: the stream cursor is drawn by a small web page running on your own PC, reachable only from your PC
+✦ New in 2.3.1
+- Fixed the cursor disappearing when Windows panels are open: clicking the battery / Wi-Fi / volume icon (Quick Settings), Win+V (clipboard history), Win+. (emoji)... now shows the normal Windows cursor. EzCursor detects any Windows panel that sits above its overlay, including new panels in future Windows versions
+- Uninstalling no longer deletes your settings and cursors automatically: the uninstaller asks first (keeps them by default)
+- The installer is shown in Vietnamese or English to match your Windows language
